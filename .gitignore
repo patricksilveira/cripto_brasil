@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Streamlit
+.streamlit/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+.claude/
+
+# Data (optional - uncomment if you don't want to track data files)
+# *.xls
+# *.xlsx
+# *.csv

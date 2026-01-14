@@ -345,142 +345,55 @@ with tab_intro:
     <div class="disclaimer">
     📊 <strong>Data Source Disclaimer</strong><br>
     This dashboard uses <strong>open source data from Receita Federal Brasil</strong> (Brazilian Federal Revenue Service).<br>
-    <strong>Data Analysis:</strong> Produced by Perplexity AI in November 2025 
-    (<a href="https://pplx.ai/patrickds3872" target="_blank">View Analysis</a>)<br>
+    <strong>Data Analysis:</strong> Produced by <a href="https://pplx.ai/patrickds3872" target="_blank">Perplexity AI</a> in November 2025 <br>
     <strong>Official Data Sources:</strong> 
     <a href="https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/declaracoes-e-demonstrativos/criptoativos" target="_blank">Receita Federal - Crypto Assets</a>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("""
-## 1. Overall Market Size and Transaction Patterns
+# 📊 Updated State of the Crypto Market in Brazil: 2025 Official Report
 
-Brazil's cryptocurrency market, measured through Receita Federal's comprehensive tracking, processed **R\$ 1.334 trillion** in total transaction volume across **453 million individual transactions** over the 72-month measurement period. This equates to an **average transaction size of R\$ 2,944.25**, revealing a market dominated by small to medium retail transactions punctuated by large institutional settlements.
+### 🚀 TL;DR
+The Brazilian market has undergone a structural transformation. In 2023 and early 2024, the market was "inflated" by millions of micro-transactions (likely betting-related). Since the 2024/2025 regulatory purge, the number of operations has dropped, but the **Value per Transaction** has surged, indicating that the remaining base is more professional and high-value.
 
-The market exhibits steady growth, with August 2019 opening at R\$ 4.04 billion monthly and peak monthly volumes reaching R\$ 12+ billion in late 2024. The data confirms Brazil's position as Latin America's largest crypto market, representing approximately 31% of regional volume according to Chainalysis.[1][2]
+## 1. Growth & CAGR (2019–2025)
+*   **Total Historical Volume**: R$ 1.55 Trillion.
+*   **Past 12 Months Volume**: R$ 464.1 Billion (Approx. 30% of all-time volume).
+*   **CAGR**: 33.6%.
+*   **Trend**: The market is "trimming the fat." We are seeing fewer but larger operations compared to the chaotic 2023 period.
 
-## 2. Extreme Asset Concentration: 
+## 2. Market Share (Excluding BUSD)
+**Brazil is now a Stablecoin-First economy.**
+*   **USDT**: 82.5% share (Last 12 months).
+*   **BTC**: 7.2%.
+*   **ETH**: 2.7%.
 
-### Concentration Breakdown
-| Asset Class | Share of Market | Cumulative % |
-|---|---|---|
-| USDT (Tether) | 62.19% | 62.19% |
-| BTC | 18.38% | 80.57% |
-| USDC + ETH + XRP | 11.16% | 91.72% |
-| Top 10 assets | 97.18% | 97.18% |
-| Remaining 56 assets | 2.82% | 100.00% |
+*Insight*: USDT is the "Digital Rail" for the Brazilian economy. BTC and ETH have evolved into "Digital Gold," while USDT provides the daily liquidity.
 
-**The market is functionally a duopoly**: USDT and BTC together command **80.57% of all Brazilian crypto transaction volume**. The next closest competitor, USDC, captures only 4.22%—a 14.7x gap from the #1 player.
+## 3. The "BET Regulation" Purge
+*   **CNPJ Peak**: 421,416 (Feb 2024).
+*   **Current CNPJs**: 92,132 (Sep 2025) — **A 78% drop**.
+*   **Impact on Ticket Size**: As the millions of betting micro-transactions disappeared, the **Average USDT Ticket jumped from R$ 3,693 (Jan) to over R$ 13,300 (Sep)**. This proves the market is now dominated by "Real" business and institutional volume.
 
-### Asset Diversification Paradox
-While Receita Federal tracks 66 distinct cryptocurrencies, the distribution is dramatically skewed:
-- **6 assets** have >1% market share
-- **14 assets** occupy the 0.1-1% band
-- **46 assets** comprise <0.1% each (averaging 0.06% market share)
+## 4. User Profiles (2025 Averages)
+*   **CPFs (Retail)**: 4.6 Million average monthly users. Retail is holding steady, using crypto for long-term savings and small transfers.
+*   **CNPJs (Corporate)**: 90,054 average monthly entities. This group moves ~65% of the total value, focusing heavily on USDT for B2B settlements.
 
-The 56 smallest assets collectively represent only **2.82% of all transactions**, suggesting these serve niche use cases or function primarily as speculative instruments rather than payment infrastructure.
+## 5. Why Brazil is Peculiar (Global Context)
+*   **The "Purified" Market**: Unlike other markets where "wash trading" or gambling obscures data, Brazil's rapid regulatory response to BETs has "cleaned" the data. The current R$ 464B annual volume is high-quality, professional liquidity.
+*   **Hyper-Velocity**: The integration with PIX means the Velocity of Money in the Brazilian crypto ecosystem is likely among the highest in the world.
 
-## 3. Stablecoin-Dominated Payment Infrastructure
-Stablecoins account for **69.89% of Brazil's entire crypto transaction volume** (R\$ 932.1 billion), with the breakdown:
+### 📈 Summary Table (Sep 2025 Data)
 
-- **USDT **: R\$ 829.4 billion (62.19%) — 35.9 million transactions, avg R\$ 58,337
-- **USDC**: R\$ 56.3 billion (4.22%) — 26.2 million transactions, avg R\$ 19,085
-- **BRZ** (Brazilian stablecoin): R\$ 37.4 billion (2.80%) — 90.8 million transactions, avg R\$ 40,666
-- **BUSD**: R\$ 8.6 billion (0.64%) — 187.6k transactions, avg R\$ 582,214
+| Metric | Value | 12-Month Trend |
+| :--- | :--- | :--- |
+| **Monthly Volume** | R$ 35.5 Billion | 📈 Growing Intensity |
+| **USDT Ticket Size** | R$ 13,304 | 🚀 Significant Increase |
+| **BTC Ticket Size** | R$ 1,142 | 📉 Retail Saturation |
+| **Active Entities** | ~1 Million | ⚖️ Stabilizing |
 
-This concentration in dollar-pegged assets reflects **macroeconomic drivers specific to Latin America**: persistent inflation, BRL currency devaluation (the Real depreciated 40%+ from 2019-2025), capital controls, and remittance corridors. USDT serves as infrastructure for corporate dollar hedging and international B2B payments rather than speculation.[2][5][6][7][8]
-
-## 4. Dual Transaction Size Markets: Institutional vs Retail
-The data reveals a **bifurcated market structure** with distinct participant types operating at different scales:
-
-### High-Value Institutional Transactions
-- **BUSD**: R\$ 582,214 average (possible corporate treasury operations)
-- **USDT**: R\$ 58,337 average (possible B2B payments, institutional)
-- **BRZ**: R\$ 40,666 average (possible Brazilian corporate payments)
-- **USDC**: R\$ 19,085 average (possible cross-border settlements)
-
-These large average transaction sizes with relatively modest operation counts (187k-35M) suggest institutional actors—banks, fintech platforms, corporate treasuries—using crypto for genuine payment and hedging functions rather than trading.[2][9]
-
-### Retail-Oriented Transactions
-- **XRP**: R\$ 5,287 average (90.8M transactions)
-- **ETH**: R\$ 1,050 average (51.8M transactions)
-- **BTC **: R\$ 2,598 average (135M transactions)
-- **XLM**: R\$ 341 average (5.2M transactions)
-
-The massive operation counts with modest average sizes for BTC  and ETH  indicate retail investment/trading activity, while XRP 's pattern (high ops, mid-range transaction size) suggests remittance corridors.[5][6][7]
-
-## 5. Market Concentration Implications
-### Systemic Risk Concentration
-The HHI of 4,258 and USDT 's 62% dominance create several vulnerabilities:
-
-1. **Regulatory Shock Risk**: A regulatory action against Tether or domestic USDT distribution platforms could instantly collapse 62% of Brazilian transaction infrastructure[1][9]
-
-2. **Operational Risk**: System failures at major Brazilian exchange operators (Mercado Bitcoin, Foxbit) would cascade through the concentrated market structure, affecting the disproportionate volume flowing through these platforms[2]
-
-3. **Liquidity Concentration**: Large outflows from institutional actors could trigger cascading liquidations in the thin altcoin markets (which collectively represent only 2.8% of volume)[3][10]
-
-### Market Maturity Signal
-Conversely, the concentration reflects positive maturation signals:
-- **Regulatory Compliance**: USDT , BTC , and USDC  (80.57% combined) are the three most-regulated, compliant cryptocurrencies globally
-- **Institutional Adoption**: Large transaction sizes indicate Fortune 500 companies and major Brazilian banks may custody and transact crypto operationally[2][9]
-- **Payment Infrastructure Replacement**: The 69.9% stablecoin share suggests crypto is displacing traditional remittance rails, SWIFT correspondent banking, and informal dollar markets in Brazilian commerce[5][6][7][8]
-
-## 6. Detailed Market Share Rankings
-The top 20 assets demonstrate the extreme concentration gradient:
-
-| Rank | Asset | Volume (R\$) | Market Share | Operations |
-|---|---|---|---|---|
-| 1 | USDT | 829.4B | 62.19% | 35.9M |
-| 2 | BTC | 245.1B | 18.38% | 134.9M |
-| 3 | USDC | 56.3B | 4.22% | 26.2M |
-| 4 | ETH | 51.9B | 3.89% | 51.8M |
-| 5 | XRP | 40.5B | 3.04% | 16.1M |
-| 6 | BRZ | 37.4B | 2.80% | 90.8M |
-| 7-10 | SOL, CHZ, BUSD, LTC | 12.2B | 0.92% | 4.4M |
-| 11-20 | LINK, XLM, ADA, BCH, DOGE, AAVE, MATIC, UNI, DCR, WBX | 8.5B | 0.64% | 7.2M |
-
-Assets ranked 21-66 collectively hold **0.69% market share**, averaging R\$ 20.7 million each—minuscule in a R\$ 1.3 trillion market.
-
-## 7. Cross-Analysis with Market Dynamics
-### Regulatory Catalysts
-The November 2025 BCB resolutions designating the Central Bank as crypto regulator and requiring foreign exchange registration by February 2026 will likely **increase concentration** further by consolidating around compliant major players. Smaller altcoins lacking regulatory sophistication may face practical trading limitations.[1][9]
-
-### Macro-Economic Drivers
-The persistent USDT dominance reflects the Brazilian macroeconomic environment:
-- **BRL Depreciation**: The Brazilian Real weakened from ~1.80 BRL/USD (2019) to 5.5+ BRL/USD (2025)
-- **Inflation Hedging**: IPCA inflation averaging 5-7% annually pushes capital into dollar-pegged assets[5][6]
-- **Capital Flight Concerns**: Brazil's fiscal deficit and interest rate environment create demand for crypto-facilitated dollar transfer (though exchange controls limit formal options)[6][11]
-
-### Institutional Market Share Growth
-Data suggests institutional CNPJ participants' share of volume is increasing, with 2024-2025 showing larger average transaction sizes in USDT and BRZ stablecoins. This indicates successful integration into corporate treasury workflows.[2][9]
-
-## Corrected Summary and Analytical Takeaways
-### Key Findings
-1. **USDT Duopoly Verified**: The R\$ 1.334 trillion market is genuinely dominated by a single asset (USDT at 62.19%), with no secondary competitor exceeding 18.4% share
-
-2. **Stablecoin Infrastructure Dominance**: Nearly 70% of all transactions use stablecoins, confirming crypto's function as **payment infrastructure rather than investment vehicle** in Brazil
-
-3. **Institutional-Retail Bifurcation**: Transaction size patterns reveal two distinct markets operating in parallel—institutional settlement (avg R\$ 40k-580k) and retail payments/trading (avg R\$ 300-5k)
-
-4. **Long-Tail Irrelevance**: 56 altcoins share only 2.82% of volume despite comprising 85% of tracked assets, suggesting limited economic relevance outside niche use cases
-
-5. **Market Maturity via Concentration**: The HHI of 4,258 and regulatory focus on top-3 assets (80.6%) reflects post-hype-cycle maturity where market participants have selected proven, compliant infrastructure
-
-
-The corrected unit analysis demonstrates that **Brazil's crypto market is a highly concentrated, institutionalized payment and hedging system dominated by stablecoins**, not a diverse speculative trading venue as surface-level metrics might suggest.
-
-References: 
-[1](https://www.chainalysis.com/blog/brazil-crypto-asset-regulatory-framework-2025/)
-[2](https://newsletter.brazilcrypto.io/p/210-brazil-crypto-volumes-at-319)
-[3](https://forklog.com/en/what-the-herfindahl-hirschman-index-hhi-says-about-the-crypto-market/)
-[4](https://www.investopedia.com/terms/h/hhi.asp)
-[5](https://futswap.io/usdt-latin-america-stablecoins-business/)
-[6](https://finance.yahoo.com/news/brazil-318b-crypto-boom-stablecoins-144257383.html)
-[7](https://en.cryptonomist.ch/2025/03/13/adoption-of-stablecoin-in-latin-america-usdc-and-usdt-dominate-transactions-on-bitso-in-2024/)
-[8](https://coingeek.com/latin-america-a-natural-vanguard-for-stablecoin-revolution/)
-[9](https://www.ainvest.com/news/brazil-crypto-crackdown-strategic-opportunities-regulated-market-2511/)
-[10](https://www.esma.europa.eu/sites/default/files/2024-04/ESMA50-524821-3153_risk_article_crypto_assets_market_structures_and_eu_relevance.pdf)
-[11](https://finance.yahoo.com/news/brazil-considers-tax-crypto-cross-150223632.html)
+**Conclusion**: The "Betting-Inflation" era is over. Brazil has entered the **Institutional Era**, where USDT is used as a functional currency for business, and the retail base is one of the most consistent and tax-compliant in the world.
     """)
     st.markdown("---")
 

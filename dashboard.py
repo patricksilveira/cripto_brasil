@@ -6,6 +6,8 @@ from pathlib import Path
 from datetime import datetime
 from utils import get_usd_rates, normalize_dataframe
 
+from theme import apply_shadcn_theme, get_custom_css
+
 
 # Page config
 st.set_page_config(
@@ -16,126 +18,13 @@ st.set_page_config(
 )
 
 # CSS styling
-st.markdown("""
-    <style>
-    /* Increase base font size */
-    html, body, [class*="css"] {
-        font-size: 16px;
-    }
-    
-    /* Increase Streamlit default text */
-    .stMarkdown, .stText {
-        font-size: 16px;
-    }
-    
-    /* Increase metric labels and values */
-    [data-testid="stMetricLabel"] {
-        font-size: 18px !important;
-        font-weight: 600;
-    }
-    
-    [data-testid="stMetricValue"] {
-        font-size: 32px !important;
-        font-weight: 700;
-    }
-    
-    [data-testid="stMetricDelta"] {
-        font-size: 16px !important;
-    }
-    
-    /* Increase tab text size */
-    .stTabs [data-baseweb="tab-list"] button {
-        font-size: 18px;
-        font-weight: 600;
-    }
-    
-    /* Increase subheader size */
-    h2, h3 {
-        font-size: 26px !important;
-        font-weight: 700 !important;
-    }
-    
-    /* Increase selectbox and input labels */
-    .stSelectbox label, .stSlider label, .stDateInput label, .stRadio label {
-        font-size: 17px !important;
-        font-weight: 600;
-    }
-    
-    /* Increase expander text */
-    .streamlit-expanderHeader {
-        font-size: 17px !important;
-        font-weight: 600;
-    }
-    
-    .metric-container {
-        background-color: #f0f2f6;
-        padding: 20px;
-        border-radius: 10px;
-        margin: 10px 0;
-    }
-    
-    .header {
-        color: #1f77b4;
-        font-size: 36px;
-        font-weight: bold;
-        margin-bottom: 20px;
-    }
-    
-    .logo-container {
-        display: flex;
-        align-items: left;
-        gap: 20px;
-        margin-bottom: 20px;
-    }
-    
-    .disclaimer {
-        background-color: #f8f9fa;
-        padding: 15px;
-        border-radius: 5px;
-        border-left: 4px solid #1f77b4;
-        margin: 20px 0;
-        font-size: 16px;
-    }
-    
-    /* Increase dataframe text */
-    .dataframe {
-        font-size: 15px !important;
-    }
-    
-    /* Increase sidebar text */
-    .css-1d391kg, [data-testid="stSidebar"] {
-        font-size: 16px;
-    }
-    
-    /* Increase sidebar header */
-    [data-testid="stSidebar"] h2 {
-        font-size: 22px !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# CSS styling
+st.markdown(get_custom_css(), unsafe_allow_html=True)
 
 # Helper function to update chart fonts
-def update_chart_fonts(fig):
-    """Apply larger fonts to Plotly charts for better readability"""
-    fig.update_layout(
-        title_font_size=20,
-        font=dict(size=14),
-        xaxis=dict(
-            title_font_size=16,
-            tickfont_size=14
-        ),
-        yaxis=dict(
-            title_font_size=16,
-            tickfont_size=14
-        ),
-        legend=dict(
-            font_size=14
-        ),
-        hoverlabel=dict(
-            font_size=14
-        )
-    )
-    return fig
+# Helper function to update chart fonts - DEPRECATED / REPLACED BY THEME
+# But we remove the definition to clean up.
+
 
 # Load data
 @st.cache_data
@@ -505,24 +394,34 @@ with tab1:
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        # Total Operations Value Timeline
-        timeline_df = filtered_op.sort_values("data").groupby("data").agg({
-            f"valor_total{currency_suffix}": "sum"
-        }).reset_index().rename(columns={f"valor_total{currency_suffix}": "valor_total"})
+        # Adoption Chart: Volume vs Users Overlay
+        adoption_df = filtered_merged.sort_values("data")
 
-        if not timeline_df.empty:
-            fig_timeline = px.line(
-                timeline_df,
-                x="data",
-                y="valor_total",
-                title=f"Total Operations Value",
-                labels={"data": "Month", "valor_total": f"Value (Millions {currency_symbol})"},
-                markers=True,
-                template="plotly_white"
+        if not adoption_df.empty:
+            fig_adoption = go.Figure()
+            
+            # Trace 1: Volume (Area)
+            vol_col = f"valor_total{currency_suffix}" # normalized or BRL
+            fig_adoption.add_trace(go.Scatter(
+                x=adoption_df["data"],
+                y=adoption_df[vol_col],
+                name=f"Volume ({currency_symbol})",
+                mode="lines",
+                fill="tozeroy",
+                line=dict(width=2),
+                hovertemplate=f"<b>%{{x|%B %Y}}</b><br>Volume: {currency_symbol} %{{y:,.2f}}M<extra></extra>"
+            ))
+            
+            fig_adoption.update_layout(
+                title=f"Total Operations Value Timeline {get_title_suffix()}",
+                xaxis_title="Month",
+                yaxis_title=f"Value (Millions {currency_symbol})",
+                template="plotly_white",
+                hovermode="x unified"
             )
-            fig_timeline.update_traces(hovertemplate=f"<b>%{{x|%B}}</b><br>{currency_symbol} %{{y:,.2f}}M<extra></extra>")
-            fig_timeline = update_chart_fonts(fig_timeline)
-            st.plotly_chart(fig_timeline, use_container_width=True, key="overview_timeline")
+            
+            fig_adoption = apply_shadcn_theme(fig_adoption)
+            st.plotly_chart(fig_adoption, width="stretch", key="overview_adoption")
         else:
             st.info(f"ℹ️ No data available for {filter_label}")
     
@@ -572,9 +471,9 @@ with tab1:
                 hovermode="x unified",
                 template="plotly_white"
             )
-            fig_comp = update_chart_fonts(fig_comp)
+            fig_comp = apply_shadcn_theme(fig_comp)
             
-            st.plotly_chart(fig_comp, use_container_width=True, key="overview_comp")
+            st.plotly_chart(fig_comp, width="stretch", key="overview_comp")
     
     with col3:
         # Domestic vs Foreign Volume Chart
@@ -601,8 +500,8 @@ with tab1:
                 hovermode="x unified",
                 template="plotly_white"
             )
-            fig_geo = update_chart_fonts(fig_geo)
-            st.plotly_chart(fig_geo, use_container_width=True, key="overview_geo")
+            fig_geo = apply_shadcn_theme(fig_geo)
+            st.plotly_chart(fig_geo, width="stretch", key="overview_geo")
 
     # Exchange Rate & Volume Comparison
     st.markdown("---")
@@ -635,8 +534,8 @@ with tab1:
                     template="plotly_white"
                 )
                 fig_fx.update_traces(hovertemplate="<b>%{x|%B %Y}</b><br>R$ %{y:,.4f}<extra></extra>")
-                fig_fx = update_chart_fonts(fig_fx)
-                st.plotly_chart(fig_fx, use_container_width=True, key="overview_fx")
+                fig_fx = apply_shadcn_theme(fig_fx)
+                st.plotly_chart(fig_fx, width="stretch", key="overview_fx")
             else:
                 st.info("No exchange rate data for the selected period.")
         else:
@@ -699,12 +598,56 @@ with tab1:
                     ),
                     hovermode="x unified",
                     template="plotly_white",
-                    legend=dict(x=0, y=1.1, orientation="h")
+                    legend=dict(x=0, y=-0.2, orientation="h")
                 )
-                fig_vol_comp = update_chart_fonts(fig_vol_comp)
-                st.plotly_chart(fig_vol_comp, use_container_width=True, key="overview_vol_comp")
+                fig_vol_comp = apply_shadcn_theme(fig_vol_comp)
+                st.plotly_chart(fig_vol_comp, width="stretch", key="overview_vol_comp")
         else:
             st.info("Volume comparison data not available.")
+
+
+    # Seasonality Analysis (Heatmap)
+    st.markdown("---")
+    st.subheader(f"Seasonality Analysis {get_title_suffix()}")
+    
+    if not filtered_op.empty:
+        heatmap_data = filtered_op.copy()
+        heatmap_data["Year"] = heatmap_data["data"].dt.year
+        # heatmap_data["Month"] = heatmap_data["data"].dt.month_name() # Requires proper locale or just use English
+        # Safe way for month names
+        heatmap_data["Month_Num"] = heatmap_data["data"].dt.month
+        
+        # Pivot for heatmap: Month x Year
+        heatmap_pivot = heatmap_data.pivot_table(
+            index="Month_Num", 
+            columns="Year", 
+            values=f"valor_total{currency_suffix}", 
+            aggfunc="sum"
+        ).fillna(0)
+        
+        # Sort by Month Num then replace index with names
+        month_names = {i: datetime(2000, i, 1).strftime('%B') for i in range(1, 13)}
+        heatmap_pivot.index = heatmap_pivot.index.map(month_names)
+        
+        # Create Heatmap
+        fig_heatmap = px.imshow(
+            heatmap_pivot,
+            labels=dict(x="Year", y="Month", color=f"Volume ({currency_symbol})"),
+            x=heatmap_pivot.columns,
+            y=heatmap_pivot.index,
+            color_continuous_scale="Blues", # Clean blue scale fitting the theme
+            aspect="auto",
+            title="Monthly Volume Intensity"
+        )
+        
+        fig_heatmap.update_traces(
+            hovertemplate="<b>%{y} %{x}</b><br>Volume: " + currency_symbol + " %{z:,.2f}M<extra></extra>"
+        )
+        
+        fig_heatmap = apply_shadcn_theme(fig_heatmap)
+        st.plotly_chart(fig_heatmap, width="stretch", key="overview_heatmap")
+    else:
+        st.info("No data available for heatmap analysis.")
 
     # User Analytics Section
     st.markdown("---")
@@ -765,8 +708,8 @@ with tab1:
                 template="plotly_white"
             )
             fig_users.update_traces(hovertemplate="<b>%{x|%B}</b><br>%{y:,}<extra></extra>")
-            fig_users = update_chart_fonts(fig_users)
-            st.plotly_chart(fig_users, use_container_width=True, key="overview_users")
+            fig_users = apply_shadcn_theme(fig_users)
+            st.plotly_chart(fig_users, width="stretch", key="overview_users")
     
     with col3:
         # Average Transaction per Individual
@@ -792,8 +735,8 @@ with tab1:
                 template="plotly_white"
             )
             fig_avg_cpf.update_traces(line_color="#1f77b4", hovertemplate=f"<b>%{{x|%B}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
-            fig_avg_cpf = update_chart_fonts(fig_avg_cpf)
-            st.plotly_chart(fig_avg_cpf, use_container_width=True, key="overview_avg_cpf")
+            fig_avg_cpf = apply_shadcn_theme(fig_avg_cpf)
+            st.plotly_chart(fig_avg_cpf, width="stretch", key="overview_avg_cpf")
     
     # 3rd Row: Companies Analytics (3 columns)
     col1, col2, col3 = st.columns(3)
@@ -851,8 +794,8 @@ with tab1:
                 color_discrete_sequence=["#FF6B6B"]
             )
             fig_cnpjs.update_traces(hovertemplate="<b>%{x|%B}</b><br>%{y:,}<extra></extra>")
-            fig_cnpjs = update_chart_fonts(fig_cnpjs)
-            st.plotly_chart(fig_cnpjs, use_container_width=True, key="overview_cnpjs")
+            fig_cnpjs = apply_shadcn_theme(fig_cnpjs)
+            st.plotly_chart(fig_cnpjs, width="stretch", key="overview_cnpjs")
     
     with col3:
         # Average Transaction per Company
@@ -878,8 +821,8 @@ with tab1:
                 template="plotly_white"
             )
             fig_avg_cnpj.update_traces(line_color="#FF6B6B", hovertemplate=f"<b>%{{x|%B}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
-            fig_avg_cnpj = update_chart_fonts(fig_avg_cnpj)
-            st.plotly_chart(fig_avg_cnpj, use_container_width=True, key="overview_avg_cnpj")
+            fig_avg_cnpj = apply_shadcn_theme(fig_avg_cnpj)
+            st.plotly_chart(fig_avg_cnpj, width="stretch", key="overview_avg_cnpj")
 
 
 
@@ -903,8 +846,8 @@ with tab3:
                 template="plotly_white"
             )
             fig_cpf.update_traces(hovertemplate="<b>%{x|%B}</b><br>%{y:,}<extra></extra>")
-            fig_cpf = update_chart_fonts(fig_cpf)
-            st.plotly_chart(fig_cpf, use_container_width=True, key="users_cpf")
+            fig_cpf = apply_shadcn_theme(fig_cpf)
+            st.plotly_chart(fig_cpf, width="stretch", key="users_cpf")
         
         # Company/Individual Ratio
         st.markdown("---")
@@ -957,8 +900,8 @@ with tab3:
                 hovermode="x unified",
                 template="plotly_white"
             )
-            fig_ratio = update_chart_fonts(fig_ratio)
-            st.plotly_chart(fig_ratio, use_container_width=True, key="users_ratio")
+            fig_ratio = apply_shadcn_theme(fig_ratio)
+            st.plotly_chart(fig_ratio, width="stretch", key="users_ratio")
         
         # Monthly User Growth (MoM)
         if not filtered_merged.empty:
@@ -988,8 +931,8 @@ with tab3:
                 template="plotly_white",
                 hovermode="x unified"
             )
-            fig_growth = update_chart_fonts(fig_growth)
-            st.plotly_chart(fig_growth, use_container_width=True, key="users_growth")
+            fig_growth = apply_shadcn_theme(fig_growth)
+            st.plotly_chart(fig_growth, width="stretch", key="users_growth")
     
     with col2:
         # Unique Companies (CNPJ) Bar Chart
@@ -1005,8 +948,8 @@ with tab3:
                 color_discrete_sequence=["#FF6B6B"]
             )
             fig_cnpj.update_traces(hovertemplate="<b>%{x|%B}</b><br>%{y:,}<extra></extra>")
-            fig_cnpj = update_chart_fonts(fig_cnpj)
-            st.plotly_chart(fig_cnpj, use_container_width=True, key="users_cnpj")
+            fig_cnpj = apply_shadcn_theme(fig_cnpj)
+            st.plotly_chart(fig_cnpj, width="stretch", key="users_cnpj")
         
         # Trading Volume Breakdown by Entity Type
         st.markdown("---")
@@ -1062,8 +1005,8 @@ with tab3:
                 hovermode="x unified",
                 template="plotly_white"
             )
-            fig_volume = update_chart_fonts(fig_volume)
-            st.plotly_chart(fig_volume, use_container_width=True, key="users_volume")
+            fig_volume = apply_shadcn_theme(fig_volume)
+            st.plotly_chart(fig_volume, width="stretch", key="users_volume")
 
 
 # ============ TAB 4: GENDER ============
@@ -1101,8 +1044,8 @@ with tab4:
                 hovermode="x unified",
                 template="plotly_white"
             )
-            fig_ops = update_chart_fonts(fig_ops)
-            st.plotly_chart(fig_ops, use_container_width=True, key="gender_ops")
+            fig_ops = apply_shadcn_theme(fig_ops)
+            st.plotly_chart(fig_ops, width="stretch", key="gender_ops")
     
     with col2:
         gender_val = filtered_gender.sort_values("data")
@@ -1133,8 +1076,8 @@ with tab4:
                 hovermode="x unified",
                 template="plotly_white"
             )
-            fig_val = update_chart_fonts(fig_val)
-            st.plotly_chart(fig_val, use_container_width=True, key="gender_val")
+            fig_val = apply_shadcn_theme(fig_val)
+            st.plotly_chart(fig_val, width="stretch", key="gender_val")
     
     # Latest month snapshot
     if not filtered_gender.empty:
@@ -1167,7 +1110,7 @@ with tab4:
                         "perc_valor_oper_feminino", "perc_valor_oper_masculino"]
         st.dataframe(
             display_gender[cols_to_show],
-            use_container_width=True,
+            width="stretch",
             hide_index=True
         )
     else:
@@ -1212,8 +1155,8 @@ with tab5:
                 hovertemplate="<b>%{label}</b><br>R$ %{value:,.2f}<extra></extra>",
                 textinfo="label+percent parent"
             )
-            fig_tree = update_chart_fonts(fig_tree)
-            st.plotly_chart(fig_tree, use_container_width=True, key="crypto_tree")
+            fig_tree = apply_shadcn_theme(fig_tree)
+            st.plotly_chart(fig_tree, width="stretch", key="crypto_tree")
         
         # 2. Volume vs Average Ticket below Market Dominance
         st.markdown("---")
@@ -1250,8 +1193,8 @@ with tab5:
             fig_scatter.update_traces(
                 hovertemplate="<b>%{hovertext}</b><br>Volume: R$ %{x:,.2f}<br>Avg Ticket: R$ %{y:,.2f}<extra></extra>"
             )
-            fig_scatter = update_chart_fonts(fig_scatter)
-            st.plotly_chart(fig_scatter, use_container_width=True, key="crypto_scatter")
+            fig_scatter = apply_shadcn_theme(fig_scatter)
+            st.plotly_chart(fig_scatter, width="stretch", key="crypto_scatter")
         
         # 3. Row with 3 columns: Top 10 charts
         st.markdown("---")
@@ -1260,27 +1203,43 @@ with tab5:
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            top_by_value = (
-                filtered_crypto.groupby("criptoativo")[f"valor_total_operacoes{currency_suffix}"]
-                .sum()
-                .nlargest(10)
-                .reset_index()
-                .sort_values(f"valor_total_operacoes{currency_suffix}")
-            )
+            # Dominance Donut Chart (Top 5 + Others)
+            dominance_series = filtered_crypto.groupby("criptoativo")[f"valor_total_operacoes{currency_suffix}"].sum().sort_values(ascending=False)
             
-            if not top_by_value.empty:
-                fig_top_value = px.bar(
-                    top_by_value,
-                    x=f"valor_total_operacoes{currency_suffix}",
-                    y="criptoativo",
-                    orientation="h",
-                    title=f"By Total Value",
-                    labels={f"valor_total_operacoes{currency_suffix}": f"Total Value ({currency_symbol})", "criptoativo": "Crypto"},
+            if not dominance_series.empty:
+                top_5 = dominance_series.head(5)
+                others_val = dominance_series.iloc[5:].sum()
+                
+                donut_data = top_5.reset_index()
+                if others_val > 0:
+                    donut_data = pd.concat([
+                        donut_data, 
+                        pd.DataFrame({"criptoativo": ["Others"], f"valor_total_operacoes{currency_suffix}": [others_val]})
+                    ], ignore_index=True)
+                
+                total_vol = dominance_series.sum()
+                
+                fig_donut = px.pie(
+                    donut_data,
+                    values=f"valor_total_operacoes{currency_suffix}",
+                    names="criptoativo",
+                    title=f"Market Dominance (Value)",
+                    hole=0.6,
                     template="plotly_white"
                 )
-                fig_top_value.update_traces(hovertemplate=f"<b>%{{y}}</b><br>{currency_symbol} %{{x:,.2f}}<extra></extra>")
-                fig_top_value = update_chart_fonts(fig_top_value)
-                st.plotly_chart(fig_top_value, use_container_width=True, key="crypto_top_value")
+                
+                fig_donut.update_traces(
+                    textposition='inside', 
+                    textinfo='percent+label',
+                    hovertemplate=f"<b>%{{label}}</b><br>{currency_symbol} %{{value:,.2f}}<br>(%{{percent}})<extra></extra>"
+                )
+                
+                fig_donut.update_layout(
+                    annotations=[dict(text=f"Total<br>{currency_symbol}{total_vol/1e9:.1f}B", x=0.5, y=0.5, font_size=20, showarrow=False)]
+                )
+                
+                fig_donut = apply_shadcn_theme(fig_donut)
+                st.plotly_chart(fig_donut, width="stretch", key="crypto_dominance")
         
         with col2:
             top_by_ops = (
@@ -1303,8 +1262,8 @@ with tab5:
                     color_discrete_sequence=["#FF6B6B"]
                 )
                 fig_top_ops.update_traces(hovertemplate="<b>%{y}</b><br>%{x:,}<extra></extra>")
-                fig_top_ops = update_chart_fonts(fig_top_ops)
-                st.plotly_chart(fig_top_ops, use_container_width=True, key="crypto_top_ops")
+                fig_top_ops = apply_shadcn_theme(fig_top_ops)
+                st.plotly_chart(fig_top_ops, width="stretch", key="crypto_top_ops")
         
         with col3:
             avg_value = (
@@ -1327,8 +1286,8 @@ with tab5:
                     color_discrete_sequence=["#2ca02c"]
                 )
                 fig_avg.update_traces(hovertemplate=f"<b>%{{y}}</b><br>{currency_symbol} %{{x:,.2f}}<extra></extra>")
-                fig_avg = update_chart_fonts(fig_avg)
-                st.plotly_chart(fig_avg, use_container_width=True, key="crypto_avg")
+                fig_avg = apply_shadcn_theme(fig_avg)
+                st.plotly_chart(fig_avg, width="stretch", key="crypto_avg")
         
         # 4. Evolution of Top 5 Cryptocurrencies (no slider)
         st.markdown("---")
@@ -1363,8 +1322,8 @@ with tab5:
                 markers=True
             )
             fig_crypto_line.update_traces(hovertemplate=f"<b>%{{x|%B}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
-            fig_crypto_line = update_chart_fonts(fig_crypto_line)
-            st.plotly_chart(fig_crypto_line, use_container_width=True, key="crypto_line")
+            fig_crypto_line = apply_shadcn_theme(fig_crypto_line)
+            st.plotly_chart(fig_crypto_line, width="stretch", key="crypto_line")
         
         # 5. Cryptocurrency Search Feature
         st.markdown("---")
@@ -1415,8 +1374,8 @@ with tab5:
                         template="plotly_white"
                     )
                     fig_volume.update_traces(hovertemplate=f"<b>%{{x|%B %Y}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
-                    fig_volume = update_chart_fonts(fig_volume)
-                    st.plotly_chart(fig_volume, use_container_width=True, key=f"crypto_search_volume_{selected_crypto}")
+                    fig_volume = apply_shadcn_theme(fig_volume)
+                    st.plotly_chart(fig_volume, width="stretch", key=f"crypto_search_volume_{selected_crypto}")
                 
                 with col2:
                     # Number of transactions
@@ -1430,8 +1389,8 @@ with tab5:
                         color_discrete_sequence=["#FF6B6B"]
                     )
                     fig_ops.update_traces(hovertemplate="<b>%{x|%B %Y}</b><br>%{y:,}<extra></extra>")
-                    fig_ops = update_chart_fonts(fig_ops)
-                    st.plotly_chart(fig_ops, use_container_width=True, key=f"crypto_search_ops_{selected_crypto}")
+                    fig_ops = apply_shadcn_theme(fig_ops)
+                    st.plotly_chart(fig_ops, width="stretch", key=f"crypto_search_ops_{selected_crypto}")
                 
                 # Detailed data table
                 st.markdown("**Monthly Detailed Data**")
@@ -1443,7 +1402,7 @@ with tab5:
                 
                 st.dataframe(
                     display_cols.sort_values("Month", ascending=False),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True
                 )
             else:

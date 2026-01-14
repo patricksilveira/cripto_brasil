@@ -4,6 +4,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from pathlib import Path
 from datetime import datetime
+from utils import get_usd_rates, normalize_dataframe
+
 
 # Page config
 st.set_page_config(
@@ -140,6 +142,7 @@ def update_chart_fonts(fig):
 def load_data():
     base_path = Path(__file__).parent / "saida_csv"
     
+    # Load raw data
     data = {
         "operacoes": pd.read_csv(base_path / "relatorio1_operacoes_por_tipo.csv"),
         "usuarios": pd.read_csv(base_path / "relatorio2_cpfs_cnpjs_unicos.csv"),
@@ -158,18 +161,54 @@ def load_data():
         data["criptoativos"]["mes"].astype(str) + "-01"
     )
     
+    # Normalize to USD
+    try:
+        rates = get_usd_rates(base_path)
+        if not rates.empty:
+            # 1. Normalize Operacoes
+            ops_cols = [
+                "valor_total", "valor_exterior_pf", "valor_exterior_pj", 
+                "valor_sem_ex_subtotal", "valor_exchanges", "valor_exterior_subtotal",
+                "valor_sem_ex_pf", "valor_sem_ex_pj"
+            ]
+            data["operacoes"] = normalize_dataframe(data["operacoes"], ops_cols, rates)
+            
+            # 2. Normalize Criptoativos
+            crypto_cols = ["valor_total_operacoes", "valor_medio_operacao"]
+            data["criptoativos"] = normalize_dataframe(data["criptoativos"], crypto_cols, rates)
+            
+            # Store rates for visualization
+            data["rates"] = rates
+    except Exception as e:
+        st.error(f"Error normalizing data to USD: {e}")
+    
     return process_data(data)
 
 def process_data(data):
     # 1. Merge Operations and Users for normalized metrics
     # We need to aggregate operations by date first to match users granularity
-    ops_monthly = data["operacoes"].groupby("data").agg({
+    
+    # Base cols to aggregate
+    agg_dict = {
         "valor_total": "sum",
         "valor_exterior_pf": "sum",
         "valor_exterior_pj": "sum",
         "valor_sem_ex_subtotal": "sum",
         "valor_exchanges": "sum"
-    }).reset_index()
+    }
+    
+    # Check if USD cols exist and add them to aggregation
+    if "valor_total_usd" in data["operacoes"].columns:
+        usd_agg = {
+            "valor_total_usd": "sum",
+            "valor_exterior_pf_usd": "sum",
+            "valor_exterior_pj_usd": "sum",
+            "valor_sem_ex_subtotal_usd": "sum",
+            "valor_exchanges_usd": "sum"
+        }
+        agg_dict.update(usd_agg)
+        
+    ops_monthly = data["operacoes"].groupby("data").agg(agg_dict).reset_index()
     
     users_monthly = data["usuarios"][["data", "cpfs_unicos", "cnpjs_unicos"]].copy()
     users_monthly["total_users"] = users_monthly["cpfs_unicos"] + users_monthly["cnpjs_unicos"]
@@ -184,23 +223,21 @@ def process_data(data):
     merged_metrics = pd.merge(ops_monthly, users_monthly, on="data", how="left")
     merged_metrics["vol_per_user"] = merged_metrics["valor_total"] * 1_000_000 / merged_metrics["total_users"] # Convert M to units
     
+    if "valor_total_usd" in merged_metrics.columns:
+        merged_metrics["vol_per_user_usd"] = merged_metrics["valor_total_usd"] * 1_000_000 / merged_metrics["total_users"]
+
     # 2. Calculate Ratios in Operations Data
-    # PF vs PJ Ratio (Approximation using available columns)
-    # Note: The dataset has 'valor_exterior_pf', 'valor_exterior_pj'. 
-    # For 'valor_sem_ex' and 'valor_exchanges', we don't have the split in the main columns shown in load_data,
-    # but let's check if we can derive it or if we only use the exterior split for now.
-    # Looking at the CSV columns: valor_exterior_pf, valor_exterior_pj, valor_sem_ex_pf, valor_sem_ex_pj
-    # We can calculate total PF and total PJ if we assume 'valor_exchanges' is mixed or mostly retail? 
-    # Actually, let's use the explicit columns we have.
-    
     ops_df = data["operacoes"].copy()
     
-    # Calculate Total PF and PJ (excluding the generic 'valor_exchanges' if it doesn't have a split)
-    # Based on CSV header: valor_sem_ex_pf, valor_sem_ex_pj exist.
+    # Calculate Total PF and PJ
     ops_df["total_pf_known"] = ops_df["valor_exterior_pf"] + ops_df["valor_sem_ex_pf"]
     ops_df["total_pj_known"] = ops_df["valor_exterior_pj"] + ops_df["valor_sem_ex_pj"]
     
-    # Calculate ratios for known segments
+    if "valor_exterior_pf_usd" in ops_df.columns:
+        ops_df["total_pf_known_usd"] = ops_df["valor_exterior_pf_usd"] + ops_df["valor_sem_ex_pf_usd"]
+        ops_df["total_pj_known_usd"] = ops_df["valor_exterior_pj_usd"] + ops_df["valor_sem_ex_pj_usd"]
+    
+    # Calculate ratios for known segments (Use BRL cols as ratios are same)
     ops_df["ratio_pf"] = ops_df["total_pf_known"] / (ops_df["total_pf_known"] + ops_df["total_pj_known"])
     ops_df["ratio_pj"] = ops_df["total_pj_known"] / (ops_df["total_pf_known"] + ops_df["total_pj_known"])
     
@@ -222,6 +259,11 @@ except Exception as e:
     st.stop()
 
 # Sidebar filters
+st.sidebar.markdown("## ⚙️ Configuration")
+currency = st.sidebar.radio("Currency / Moeda:", ["BRL", "USD"], index=0)
+currency_suffix = "_usd" if currency == "USD" else ""
+currency_symbol = "US$" if currency == "USD" else "R$"
+
 st.sidebar.markdown("## 🎯 Filters")
 
 # Get available years from all datasets
@@ -345,7 +387,7 @@ with tab_intro:
     <div class="disclaimer">
     📊 <strong>Data Source Disclaimer</strong><br>
     This dashboard uses <strong>open source data from Receita Federal Brasil</strong> (Brazilian Federal Revenue Service).<br>
-    <strong>Data Analysis:</strong> Produced by <a href="https://pplx.ai/patrickds3872" target="_blank">Perplexity AI</a> in November 2025 <br>
+    <strong>Data Analysis:</strong> Produced by <a href="https://pplx.ai/patrickds3872" target="_blank">Perplexity AI</a> in January 2026 <br>
     <strong>Official Data Sources:</strong> 
     <a href="https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/declaracoes-e-demonstrativos/criptoativos" target="_blank">Receita Federal - Crypto Assets</a>
     </div>
@@ -404,8 +446,8 @@ with tab1:
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        total_operacoes = filtered_op["valor_total"].sum()
-        st.metric("Total Value", f"R$ {total_operacoes:,.0f}M")
+        total_operacoes = filtered_op[f"valor_total{currency_suffix}"].sum()
+        st.metric("Total Value", f"{currency_symbol} {total_operacoes:,.0f}M")
 
     with col2:
         max_cpfs = filtered_users["cpfs_unicos"].max() if not filtered_users.empty else 0
@@ -425,35 +467,35 @@ with tab1:
     
     if not filtered_op.empty:
         # Calculate totals for the entire period
-        total_pf_foreign = filtered_op['valor_exterior_pf'].sum()
-        total_pj_foreign = filtered_op['valor_exterior_pj'].sum()
-        total_domestic = filtered_op['valor_sem_ex_subtotal'].sum()
-        total_exchanges = filtered_op['valor_exchanges'].sum()
+        total_pf_foreign = filtered_op[f'valor_exterior_pf{currency_suffix}'].sum()
+        total_pj_foreign = filtered_op[f'valor_exterior_pj{currency_suffix}'].sum()
+        total_domestic = filtered_op[f'valor_sem_ex_subtotal{currency_suffix}'].sum()
+        total_exchanges = filtered_op[f'valor_exchanges{currency_suffix}'].sum()
         
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             st.metric(
                 "Individual - Foreign",
-                f"R$ {total_pf_foreign:,.0f}M"
+                f"{currency_symbol} {total_pf_foreign:,.0f}M"
             )
         
         with col2:
             st.metric(
                 "Company - Foreign",
-                f"R$ {total_pj_foreign:,.0f}M"
+                f"{currency_symbol} {total_pj_foreign:,.0f}M"
             )
         
         with col3:
             st.metric(
                 "Ind/Co - Domestic",
-                f"R$ {total_domestic:,.0f}M"
+                f"{currency_symbol} {total_domestic:,.0f}M"
             )
         
         with col4:
             st.metric(
                 "Exchanges",
-                f"R$ {total_exchanges:,.0f}M"
+                f"{currency_symbol} {total_exchanges:,.0f}M"
             )
 
     # 1st Row: Total Operations Data (3 columns)
@@ -465,8 +507,8 @@ with tab1:
     with col1:
         # Total Operations Value Timeline
         timeline_df = filtered_op.sort_values("data").groupby("data").agg({
-            "valor_total": "sum"
-        }).reset_index()
+            f"valor_total{currency_suffix}": "sum"
+        }).reset_index().rename(columns={f"valor_total{currency_suffix}": "valor_total"})
 
         if not timeline_df.empty:
             fig_timeline = px.line(
@@ -474,11 +516,11 @@ with tab1:
                 x="data",
                 y="valor_total",
                 title=f"Total Operations Value",
-                labels={"data": "Month", "valor_total": "Value (Millions R$)"},
+                labels={"data": "Month", "valor_total": f"Value (Millions {currency_symbol})"},
                 markers=True,
                 template="plotly_white"
             )
-            fig_timeline.update_traces(hovertemplate="<b>%{x|%B}</b><br>R$ %{y:,.2f}M<extra></extra>")
+            fig_timeline.update_traces(hovertemplate=f"<b>%{{x|%B}}</b><br>{currency_symbol} %{{y:,.2f}}M<extra></extra>")
             fig_timeline = update_chart_fonts(fig_timeline)
             st.plotly_chart(fig_timeline, use_container_width=True, key="overview_timeline")
         else:
@@ -493,7 +535,7 @@ with tab1:
             
             fig_comp.add_trace(go.Scatter(
                 x=timeline_comp["data"],
-                y=timeline_comp["valor_exterior_pf"],
+                y=timeline_comp[f"valor_exterior_pf{currency_suffix}"],
                 name="Individual - Foreign",
                 mode="lines",
                 stackgroup="one"
@@ -501,7 +543,7 @@ with tab1:
             
             fig_comp.add_trace(go.Scatter(
                 x=timeline_comp["data"],
-                y=timeline_comp["valor_exterior_pj"],
+                y=timeline_comp[f"valor_exterior_pj{currency_suffix}"],
                 name="Company - Foreign",
                 mode="lines",
                 stackgroup="one"
@@ -509,7 +551,7 @@ with tab1:
             
             fig_comp.add_trace(go.Scatter(
                 x=timeline_comp["data"],
-                y=timeline_comp["valor_sem_ex_subtotal"],
+                y=timeline_comp[f"valor_sem_ex_subtotal{currency_suffix}"],
                 name="Ind/Co - Domestic",
                 mode="lines",
                 stackgroup="one"
@@ -517,7 +559,7 @@ with tab1:
             
             fig_comp.add_trace(go.Scatter(
                 x=timeline_comp["data"],
-                y=timeline_comp["valor_exchanges"],
+                y=timeline_comp[f"valor_exchanges{currency_suffix}"],
                 name="Exchanges",
                 mode="lines",
                 stackgroup="one"
@@ -526,7 +568,7 @@ with tab1:
             fig_comp.update_layout(
                 title=f"Operations Composition",
                 xaxis_title="Month",
-                yaxis_title="Value (Millions R$)",
+                yaxis_title=f"Value (Millions {currency_symbol})",
                 hovermode="x unified",
                 template="plotly_white"
             )
@@ -562,6 +604,108 @@ with tab1:
             fig_geo = update_chart_fonts(fig_geo)
             st.plotly_chart(fig_geo, use_container_width=True, key="overview_geo")
 
+    # Exchange Rate & Volume Comparison
+    st.markdown("---")
+    st.subheader(f"Exchange Rate & Volume Comparison {get_title_suffix()}")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # FX Rate Chart
+        if "rates" in data and not data["rates"].empty:
+            rates_df = data["rates"].copy()
+            
+            # Filter based on current selection if possible
+            # We can use the start_date and end_date from filter logic if available, 
+            # or just filter by the same range as filtered_op to keep it consistent.
+            if not filtered_op.empty:
+                min_op_date = filtered_op["data"].min()
+                max_op_date = filtered_op["data"].max()
+                rates_df = rates_df[(rates_df["data"] >= min_op_date) & 
+                                    (rates_df["data"] <= max_op_date)]
+            
+            if not rates_df.empty:
+                fig_fx = px.line(
+                    rates_df,
+                    x="data",
+                    y="rate",
+                    title="Monthly Average USD/BRL Exchange Rate",
+                    labels={"data": "Month", "rate": "Rate (R$)"},
+                    markers=True,
+                    template="plotly_white"
+                )
+                fig_fx.update_traces(hovertemplate="<b>%{x|%B %Y}</b><br>R$ %{y:,.4f}<extra></extra>")
+                fig_fx = update_chart_fonts(fig_fx)
+                st.plotly_chart(fig_fx, use_container_width=True, key="overview_fx")
+            else:
+                st.info("No exchange rate data for the selected period.")
+        else:
+            st.info("Exchange rate data is not available.")
+            
+    with col2:
+        # Volume Comparison (BRL vs USD)
+        if not filtered_op.empty and "valor_total_usd" in data["operacoes"].columns:
+            # We need to aggregate both BRL and USD values by date from the main df 
+            # (or use filtered_op if it has the usd column, which it should if we updated load_data correctly)
+            
+            # Check if filtered_op has the USD column. 
+            # In process_data, we enrich ops_enriched but filtered_op is slice of data["operacoes"] 
+            # so it should have the normalized columns if they were added inplace or if filtered_op is taken from updated df.
+            # Let's verify: In dashboard.py line 301/334/348, filtered_op = data["operacoes"][...]
+            # data["operacoes"] was updated in load_data with normalize_dataframe which ADDS columns. 
+            # So filtered_op HAS 'valor_total' and 'valor_total_usd'.
+            
+            comp_df = filtered_op.groupby("data").agg({
+                "valor_total": "sum",
+                "valor_total_usd": "sum"
+            }).reset_index()
+            
+            if not comp_df.empty:
+                fig_vol_comp = go.Figure()
+                
+                # BRL Bar (Left Axis)
+                fig_vol_comp.add_trace(go.Bar(
+                    x=comp_df["data"],
+                    y=comp_df["valor_total"],
+                    name="Volume (BRL)",
+                    marker_color="#1f77b4",
+                    yaxis="y"
+                ))
+                
+                # USD Line (Right Axis)
+                fig_vol_comp.add_trace(go.Scatter(
+                    x=comp_df["data"],
+                    y=comp_df["valor_total_usd"],
+                    name="Volume (USD)",
+                    marker_color="#2ca02c",
+                    mode="lines+markers",
+                    yaxis="y2"
+                ))
+                
+                fig_vol_comp.update_layout(
+                    title="Total Volume: Real (BRL) vs Dollar (USD)",
+                    xaxis_title="Month",
+                    yaxis=dict(
+                        title="Volume (Millions R$)",
+                        title_font=dict(color="#1f77b4"),
+                        tickfont=dict(color="#1f77b4")
+                    ),
+                    yaxis2=dict(
+                        title="Volume (Millions US$)",
+                        title_font=dict(color="#2ca02c"),
+                        tickfont=dict(color="#2ca02c"),
+                        overlaying="y",
+                        side="right"
+                    ),
+                    hovermode="x unified",
+                    template="plotly_white",
+                    legend=dict(x=0, y=1.1, orientation="h")
+                )
+                fig_vol_comp = update_chart_fonts(fig_vol_comp)
+                st.plotly_chart(fig_vol_comp, use_container_width=True, key="overview_vol_comp")
+        else:
+            st.info("Volume comparison data not available.")
+
     # User Analytics Section
     st.markdown("---")
     st.subheader(f"User Analytics {get_title_suffix()}")
@@ -575,7 +719,7 @@ with tab1:
         
         if not filtered_op.empty and not filtered_users.empty:
             # Total Volume
-            total_pf_volume = filtered_op["valor_exterior_pf"].sum() + filtered_op["valor_sem_ex_pf"].sum()
+            total_pf_volume = filtered_op[f"valor_exterior_pf{currency_suffix}"].sum() + filtered_op[f"valor_sem_ex_pf{currency_suffix}"].sum()
             
             # Average transaction for the period
             total_cpfs = filtered_users["cpfs_unicos"].sum()
@@ -589,7 +733,7 @@ with tab1:
             with col_a:
                 st.metric(
                     "Avg Transaction (Period)",
-                    f"R$ {avg_transaction_period:,.2f}"
+                    f"{currency_symbol} {avg_transaction_period:,.2f}"
                 )
                 st.metric(
                     "Max Individuals",
@@ -598,7 +742,7 @@ with tab1:
             with col_b:
                 st.metric(
                     "Total Volume",
-                    f"R$ {total_pf_volume:,.0f}M"
+                    f"{currency_symbol} {total_pf_volume:,.0f}M"
                 )
                 st.metric(
                     "Min Individuals",
@@ -633,7 +777,7 @@ with tab1:
                 on="data", 
                 how="left"
             )
-            avg_per_cpf_df["total_pf_volume"] = avg_per_cpf_df["valor_exterior_pf"] + avg_per_cpf_df["valor_sem_ex_pf"]
+            avg_per_cpf_df["total_pf_volume"] = avg_per_cpf_df[f"valor_exterior_pf{currency_suffix}"] + avg_per_cpf_df[f"valor_sem_ex_pf{currency_suffix}"]
             # Convert from millions to actual R$ values
             avg_per_cpf_df["avg_per_cpf"] = (avg_per_cpf_df["total_pf_volume"] * 1_000_000) / avg_per_cpf_df["cpfs_unicos"]
             avg_per_cpf_df = avg_per_cpf_df.sort_values("data")
@@ -643,11 +787,11 @@ with tab1:
                 x="data",
                 y="avg_per_cpf",
                 title="Avg Transaction per Individual",
-                labels={"data": "Month", "avg_per_cpf": "Average (R$)"},
+                labels={"data": "Month", "avg_per_cpf": f"Average ({currency_symbol})"},
                 markers=True,
                 template="plotly_white"
             )
-            fig_avg_cpf.update_traces(line_color="#1f77b4", hovertemplate="<b>%{x|%B}</b><br>R$ %{y:,.2f}<extra></extra>")
+            fig_avg_cpf.update_traces(line_color="#1f77b4", hovertemplate=f"<b>%{{x|%B}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
             fig_avg_cpf = update_chart_fonts(fig_avg_cpf)
             st.plotly_chart(fig_avg_cpf, use_container_width=True, key="overview_avg_cpf")
     
@@ -660,7 +804,7 @@ with tab1:
         
         if not filtered_op.empty and not filtered_users.empty:
             # Total Volume
-            total_pj_volume = filtered_op["valor_exterior_pj"].sum() + filtered_op["valor_sem_ex_pj"].sum()
+            total_pj_volume = filtered_op[f"valor_exterior_pj{currency_suffix}"].sum() + filtered_op[f"valor_sem_ex_pj{currency_suffix}"].sum()
             
             # Average transaction for the period
             total_cnpjs = filtered_users["cnpjs_unicos"].sum()
@@ -674,7 +818,7 @@ with tab1:
             with col_a:
                 st.metric(
                     "Avg Transaction (Period)",
-                    f"R$ {avg_transaction_period_pj:,.2f}"
+                    f"{currency_symbol} {avg_transaction_period_pj:,.2f}"
                 )
                 st.metric(
                     "Max Companies",
@@ -683,7 +827,7 @@ with tab1:
             with col_b:
                 st.metric(
                     "Total Volume",
-                    f"R$ {total_pj_volume:,.0f}M"
+                    f"{currency_symbol} {total_pj_volume:,.0f}M"
                 )
                 st.metric(
                     "Min Companies",
@@ -719,7 +863,7 @@ with tab1:
                 on="data", 
                 how="left"
             )
-            avg_per_cnpj_df["total_pj_volume"] = avg_per_cnpj_df["valor_exterior_pj"] + avg_per_cnpj_df["valor_sem_ex_pj"]
+            avg_per_cnpj_df["total_pj_volume"] = avg_per_cnpj_df[f"valor_exterior_pj{currency_suffix}"] + avg_per_cnpj_df[f"valor_sem_ex_pj{currency_suffix}"]
             # Convert from millions to actual R$ values
             avg_per_cnpj_df["avg_per_cnpj"] = (avg_per_cnpj_df["total_pj_volume"] * 1_000_000) / avg_per_cnpj_df["cnpjs_unicos"]
             avg_per_cnpj_df = avg_per_cnpj_df.sort_values("data")
@@ -729,11 +873,11 @@ with tab1:
                 x="data",
                 y="avg_per_cnpj",
                 title="Avg Transaction per Company",
-                labels={"data": "Month", "avg_per_cnpj": "Average (R$)"},
+                labels={"data": "Month", "avg_per_cnpj": f"Average ({currency_symbol})"},
                 markers=True,
                 template="plotly_white"
             )
-            fig_avg_cnpj.update_traces(line_color="#FF6B6B", hovertemplate="<b>%{x|%B}</b><br>R$ %{y:,.2f}<extra></extra>")
+            fig_avg_cnpj.update_traces(line_color="#FF6B6B", hovertemplate=f"<b>%{{x|%B}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
             fig_avg_cnpj = update_chart_fonts(fig_avg_cnpj)
             st.plotly_chart(fig_avg_cnpj, use_container_width=True, key="overview_avg_cnpj")
 
@@ -1117,24 +1261,24 @@ with tab5:
         
         with col1:
             top_by_value = (
-                filtered_crypto.groupby("criptoativo")["valor_total_operacoes"]
+                filtered_crypto.groupby("criptoativo")[f"valor_total_operacoes{currency_suffix}"]
                 .sum()
                 .nlargest(10)
                 .reset_index()
-                .sort_values("valor_total_operacoes")
+                .sort_values(f"valor_total_operacoes{currency_suffix}")
             )
             
             if not top_by_value.empty:
                 fig_top_value = px.bar(
                     top_by_value,
-                    x="valor_total_operacoes",
+                    x=f"valor_total_operacoes{currency_suffix}",
                     y="criptoativo",
                     orientation="h",
                     title=f"By Total Value",
-                    labels={"valor_total_operacoes": "Total Value (R$)", "criptoativo": "Crypto"},
+                    labels={f"valor_total_operacoes{currency_suffix}": f"Total Value ({currency_symbol})", "criptoativo": "Crypto"},
                     template="plotly_white"
                 )
-                fig_top_value.update_traces(hovertemplate="<b>%{y}</b><br>R$ %{x:,.2f}<extra></extra>")
+                fig_top_value.update_traces(hovertemplate=f"<b>%{{y}}</b><br>{currency_symbol} %{{x:,.2f}}<extra></extra>")
                 fig_top_value = update_chart_fonts(fig_top_value)
                 st.plotly_chart(fig_top_value, use_container_width=True, key="crypto_top_value")
         
@@ -1164,25 +1308,25 @@ with tab5:
         
         with col3:
             avg_value = (
-                filtered_crypto.groupby("criptoativo")["valor_medio_operacao"]
+                filtered_crypto.groupby("criptoativo")[f"valor_medio_operacao{currency_suffix}"]
                 .mean()
                 .nlargest(10)
                 .reset_index()
-                .sort_values("valor_medio_operacao")
+                .sort_values(f"valor_medio_operacao{currency_suffix}")
             )
             
             if not avg_value.empty:
                 fig_avg = px.bar(
                     avg_value,
-                    x="valor_medio_operacao",
+                    x=f"valor_medio_operacao{currency_suffix}",
                     y="criptoativo",
                     orientation="h",
                     title=f"By Average Operation Value",
-                    labels={"valor_medio_operacao": "Average Value (R$)", "criptoativo": "Crypto"},
+                    labels={f"valor_medio_operacao{currency_suffix}": f"Average Value ({currency_symbol})", "criptoativo": "Crypto"},
                     template="plotly_white",
                     color_discrete_sequence=["#2ca02c"]
                 )
-                fig_avg.update_traces(hovertemplate="<b>%{y}</b><br>R$ %{x:,.2f}<extra></extra>")
+                fig_avg.update_traces(hovertemplate=f"<b>%{{y}}</b><br>{currency_symbol} %{{x:,.2f}}<extra></extra>")
                 fig_avg = update_chart_fonts(fig_avg)
                 st.plotly_chart(fig_avg, use_container_width=True, key="crypto_avg")
         
@@ -1192,7 +1336,7 @@ with tab5:
         
         # Get top 5 cryptocurrencies by total value
         top_5_crypto = (
-            filtered_crypto.groupby("criptoativo")["valor_total_operacoes"]
+            filtered_crypto.groupby("criptoativo")[f"valor_total_operacoes{currency_suffix}"]
             .sum()
             .nlargest(5)
             .index.tolist()
@@ -1202,7 +1346,7 @@ with tab5:
         
         crypto_timeline = (
             filtered_top_5.sort_values("data")
-            .groupby(["data", "criptoativo"])["valor_total_operacoes"]
+            .groupby(["data", "criptoativo"])[f"valor_total_operacoes{currency_suffix}"]
             .sum()
             .reset_index()
         )
@@ -1211,14 +1355,14 @@ with tab5:
             fig_crypto_line = px.line(
                 crypto_timeline,
                 x="data",
-                y="valor_total_operacoes",
+                y=f"valor_total_operacoes{currency_suffix}",
                 color="criptoativo",
                 title=f"Monthly Trading Volume - Top 5 Cryptocurrencies {get_title_suffix()}",
-                labels={"data": "Month", "valor_total_operacoes": "Total Value (R$)", "criptoativo": "Cryptocurrency"},
+                labels={"data": "Month", f"valor_total_operacoes{currency_suffix}": f"Total Value ({currency_symbol})", "criptoativo": "Cryptocurrency"},
                 template="plotly_white",
                 markers=True
             )
-            fig_crypto_line.update_traces(hovertemplate="<b>%{x|%B}</b><br>R$ %{y:,.2f}<extra></extra>")
+            fig_crypto_line.update_traces(hovertemplate=f"<b>%{{x|%B}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
             fig_crypto_line = update_chart_fonts(fig_crypto_line)
             st.plotly_chart(fig_crypto_line, use_container_width=True, key="crypto_line")
         
@@ -1242,20 +1386,20 @@ with tab5:
             
             if not crypto_data.empty:
                 # Summary metrics
-                total_volume = crypto_data["valor_total_operacoes"].sum()
+                total_volume = crypto_data[f"valor_total_operacoes{currency_suffix}"].sum()
                 total_ops = crypto_data["num_operacoes"].sum()
-                avg_value = crypto_data["valor_medio_operacao"].mean()
+                avg_value = crypto_data[f"valor_medio_operacao{currency_suffix}"].mean()
                 
                 col1, col2, col3 = st.columns(3)
                 
                 with col1:
-                    st.metric("Total Volume (Period)", f"R$ {total_volume:,.2f}")
+                    st.metric("Total Volume (Period)", f"{currency_symbol} {total_volume:,.2f}")
                 
                 with col2:
                     st.metric("Total Transactions", f"{total_ops:,}")
                 
                 with col3:
-                    st.metric("Avg Transaction Value", f"R$ {avg_value:,.2f}")
+                    st.metric("Avg Transaction Value", f"{currency_symbol} {avg_value:,.2f}")
                 
                 # Charts for selected cryptocurrency
                 col1, col2 = st.columns(2)
@@ -1265,12 +1409,12 @@ with tab5:
                     fig_volume = px.area(
                         crypto_data,
                         x="data",
-                        y="valor_total_operacoes",
+                        y=f"valor_total_operacoes{currency_suffix}",
                         title=f"{selected_crypto} - Monthly Trading Volume",
-                        labels={"data": "Month", "valor_total_operacoes": "Volume (R$)"},
+                        labels={"data": "Month", f"valor_total_operacoes{currency_suffix}": f"Volume ({currency_symbol})"},
                         template="plotly_white"
                     )
-                    fig_volume.update_traces(hovertemplate="<b>%{x|%B %Y}</b><br>R$ %{y:,.2f}<extra></extra>")
+                    fig_volume.update_traces(hovertemplate=f"<b>%{{x|%B %Y}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
                     fig_volume = update_chart_fonts(fig_volume)
                     st.plotly_chart(fig_volume, use_container_width=True, key=f"crypto_search_volume_{selected_crypto}")
                 

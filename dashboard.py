@@ -181,7 +181,7 @@ max_date = max(
 # Filter type selector
 filter_type = st.sidebar.radio(
     "Filter Type:",
-    options=["By Year", "Date Range", "All Period"],
+    options=["By Year", "Date Range", "All Period", "Yearly Overview"],
     index=0
 )
 
@@ -250,6 +250,66 @@ elif filter_type == "All Period":
 
     filter_label = f"All period ({min_date.strftime('%m/%Y')} to {max_date.strftime('%m/%Y')})"
 
+elif filter_type == "Yearly Overview":
+    # Aggregate data by YEAR
+    # 1. Operations: Sum numeric cols
+    filtered_op = data["operacoes"].groupby("ano", as_index=False).sum(numeric_only=True)
+    # Create fake date for plotting (Jan 1st of that year)
+    filtered_op["data"] = pd.to_datetime(filtered_op["ano"].astype(str) + "-01-01")
+    
+    # 2. Users: Average numeric cols (cannot sum unique users)
+    filtered_users = data["usuarios"].groupby("ano", as_index=False).mean(numeric_only=True)
+    filtered_users["data"] = pd.to_datetime(filtered_users["ano"].astype(str) + "-01-01")
+    
+    # 3. Gender: Average percentages? Or re-calculate from raw? 
+    # Since we don't have raw absolute numbers for gender easily at hand without re-merging, 
+    # taking the mean of percentages is a reasonable approximation for visual trends, 
+    # BUT better to leave as is or skip. Let's filter by range but show yearly? 
+    # Actually, for "Yearly Overview", usually we want to see the evolution BY YEAR.
+    # The existing "all period" logic shows M-o-M evolution. 
+    # The "Yearly Overview" implies X-axis is Year.
+    
+    filtered_gender = data["genero"].groupby("ano", as_index=False).mean(numeric_only=True)
+    filtered_gender["data"] = pd.to_datetime(filtered_gender["ano"].astype(str) + "-01-01")
+    
+    # 4. Crypto: Sum volumes, Mean averages
+    filtered_crypto = data["criptoativos"].groupby(["ano", "criptoativo"], as_index=False).agg({
+        "valor_total_operacoes": "sum",
+        "num_operacoes": "sum",
+        "valor_medio_operacao": "mean" # Weighted average would be better but simple mean is ok for now or we recalc
+    })
+    # If USD cols exist
+    if f"valor_total_operacoes{currency_suffix}" != "valor_total_operacoes":
+         filtered_crypto_usd = data["criptoativos"].groupby(["ano", "criptoativo"], as_index=False).agg({
+            f"valor_total_operacoes{currency_suffix}": "sum",
+            f"valor_medio_operacao{currency_suffix}": "mean" 
+        })
+         # Merge back
+         filtered_crypto = pd.merge(filtered_crypto, filtered_crypto_usd[[ "ano", "criptoativo", f"valor_total_operacoes{currency_suffix}", f"valor_medio_operacao{currency_suffix}"]], on=["ano", "criptoativo"])
+
+    filtered_crypto["data"] = pd.to_datetime(filtered_crypto["ano"].astype(str) + "-01-01")
+    
+    # 5. Merged Metrics
+    # Re-calculate merged metrics for yearly granularity
+    # Ops already aggregated by year
+    # Users already aggregated (mean) by year
+    filtered_merged = pd.merge(
+        filtered_op, 
+        filtered_users[["data", "cpfs_unicos", "cnpjs_unicos"]], 
+        on="data", 
+        how="left"
+    )
+    
+    filtered_merged["total_users"] = filtered_merged["cpfs_unicos"] + filtered_merged["cnpjs_unicos"]
+    
+    # Recalculate growth text (Year-over-Year)
+    filtered_merged = filtered_merged.sort_values("data")
+    filtered_merged["user_growth_pct"] = filtered_merged["total_users"].pct_change() * 100
+    filtered_merged["cpf_growth_pct"] = filtered_merged["cpfs_unicos"].pct_change() * 100
+    filtered_merged["cnpj_growth_pct"] = filtered_merged["cnpjs_unicos"].pct_change() * 100
+
+    filter_label = f"Yearly Overview ({min_date.year} - {max_date.year})"
+
 # Main header with logo
 st.image('dashboard_criptobrasil_logo.png', width=250)
 st.markdown('<p class="header">📊 CryptoBrazil Dashboard</p>', unsafe_allow_html=True)
@@ -264,8 +324,20 @@ tab_intro, tab1, tab3, tab4, tab5 = st.tabs([
 def get_title_suffix():
     if filter_type == "By Year":
         return f"- {int(filtered_op['ano'].unique()[0]) if not filtered_op.empty and filtered_op['ano'].unique()[0] > 0 else 'Selected Period'}"
+    elif filter_type == "Yearly Overview":
+        return "- Yearly Overview"
     else:
         return "- Selected Period"
+
+# Date format helper
+if filter_type == "Yearly Overview":
+    # Just Year
+    date_fmt = "%Y"
+    xaxis_title = "Year"
+else:
+    # Month + Year
+    date_fmt = "%B %Y"
+    xaxis_title = "Month"
 
 # ============ TAB INTRO: INTRODUCTION ============
 with tab_intro:
@@ -409,12 +481,12 @@ with tab1:
                 mode="lines",
                 fill="tozeroy",
                 line=dict(width=2),
-                hovertemplate=f"<b>%{{x|%B %Y}}</b><br>Volume: {currency_symbol} %{{y:,.2f}}M<extra></extra>"
+                hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>Volume: {currency_symbol} %{{y:,.2f}}M<extra></extra>"
             ))
             
             fig_adoption.update_layout(
                 title=f"Total Operations Value Timeline {get_title_suffix()}",
-                xaxis_title="Month",
+                xaxis_title=xaxis_title,
                 yaxis_title=f"Value (Millions {currency_symbol})",
                 template="plotly_white",
                 hovermode="x unified"
@@ -466,7 +538,7 @@ with tab1:
             
             fig_comp.update_layout(
                 title=f"Operations Composition",
-                xaxis_title="Month",
+                xaxis_title=xaxis_title,
                 yaxis_title=f"Value (Millions {currency_symbol})",
                 hovermode="x unified",
                 template="plotly_white"
@@ -583,7 +655,7 @@ with tab1:
                 
                 fig_vol_comp.update_layout(
                     title="Total Volume: Real (BRL) vs Dollar (USD)",
-                    xaxis_title="Month",
+                    xaxis_title=xaxis_title,
                     yaxis=dict(
                         title="Volume (Millions R$)",
                         title_font=dict(color="#1f77b4"),
@@ -704,10 +776,10 @@ with tab1:
                 x="data",
                 y="cpfs_unicos",
                 title=f"Unique Individuals (CPF)",
-                labels={"data": "Month", "cpfs_unicos": "Unique CPFs"},
+                labels={"data": xaxis_title, "cpfs_unicos": "Unique CPFs"},
                 template="plotly_white"
             )
-            fig_users.update_traces(hovertemplate="<b>%{x|%B}</b><br>%{y:,}<extra></extra>")
+            fig_users.update_traces(hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>%{{y:,}}<extra></extra>")
             fig_users = apply_shadcn_theme(fig_users)
             st.plotly_chart(fig_users, width="stretch", key="overview_users")
     
@@ -730,11 +802,11 @@ with tab1:
                 x="data",
                 y="avg_per_cpf",
                 title="Avg Transaction per Individual",
-                labels={"data": "Month", "avg_per_cpf": f"Average ({currency_symbol})"},
+                labels={"data": xaxis_title, "avg_per_cpf": f"Average ({currency_symbol})"},
                 markers=True,
                 template="plotly_white"
             )
-            fig_avg_cpf.update_traces(line_color="#1f77b4", hovertemplate=f"<b>%{{x|%B}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
+            fig_avg_cpf.update_traces(line_color="#1f77b4", hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
             fig_avg_cpf = apply_shadcn_theme(fig_avg_cpf)
             st.plotly_chart(fig_avg_cpf, width="stretch", key="overview_avg_cpf")
     
@@ -789,11 +861,11 @@ with tab1:
                 x="data",
                 y="cnpjs_unicos",
                 title=f"Unique Companies (CNPJ)",
-                labels={"data": "Month", "cnpjs_unicos": "Unique CNPJs"},
+                labels={"data": xaxis_title, "cnpjs_unicos": "Unique CNPJs"},
                 template="plotly_white",
                 color_discrete_sequence=["#FF6B6B"]
             )
-            fig_cnpjs.update_traces(hovertemplate="<b>%{x|%B}</b><br>%{y:,}<extra></extra>")
+            fig_cnpjs.update_traces(hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>%{{y:,}}<extra></extra>")
             fig_cnpjs = apply_shadcn_theme(fig_cnpjs)
             st.plotly_chart(fig_cnpjs, width="stretch", key="overview_cnpjs")
     
@@ -879,7 +951,7 @@ with tab3:
                 stackgroup="one",
                 fillcolor="#1f77b4",
                 line=dict(color="#1f77b4"),
-                hovertemplate="<b>%{x|%B}</b><br>Individuals: %{y:.2f}%<extra></extra>"
+                hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>Individuals: %{{y:.2f}}%<extra></extra>"
             ))
             fig_ratio.add_trace(go.Scatter(
                 x=ratio_df["data"],
@@ -889,12 +961,12 @@ with tab3:
                 stackgroup="one",
                 fillcolor="#FF6B6B",
                 line=dict(color="#FF6B6B"),
-                hovertemplate="<b>%{x|%B}</b><br>Companies: %{y:.2f}%<extra></extra>"
+                hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>Companies: %{{y:.2f}}%<extra></extra>"
             ))
             
             fig_ratio.update_layout(
                 title=f"% of Users: Individuals vs Companies",
-                xaxis_title="Month",
+                xaxis_title=xaxis_title,
                 yaxis_title="Percentage (%)",
                 yaxis=dict(range=[0, 100]),
                 hovermode="x unified",
@@ -943,11 +1015,11 @@ with tab3:
                 x="data",
                 y="cnpjs_unicos",
                 title=f"Unique Companies (CNPJ)",
-                labels={"data": "Month", "cnpjs_unicos": "Unique CNPJs"},
+                labels={"data": xaxis_title, "cnpjs_unicos": "Unique CNPJs"},
                 template="plotly_white",
                 color_discrete_sequence=["#FF6B6B"]
             )
-            fig_cnpj.update_traces(hovertemplate="<b>%{x|%B}</b><br>%{y:,}<extra></extra>")
+            fig_cnpj.update_traces(hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>%{{y:,}}<extra></extra>")
             fig_cnpj = apply_shadcn_theme(fig_cnpj)
             st.plotly_chart(fig_cnpj, width="stretch", key="users_cnpj")
         
@@ -984,7 +1056,7 @@ with tab3:
                 stackgroup="one",
                 fillcolor="#1f77b4",
                 line=dict(color="#1f77b4"),
-                hovertemplate="<b>%{x|%B}</b><br>Individuals: %{y:.2f}%<extra></extra>"
+                hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>Individuals: %{{y:.2f}}%<extra></extra>"
             ))
             fig_volume.add_trace(go.Scatter(
                 x=volume_df["data"],
@@ -994,12 +1066,12 @@ with tab3:
                 stackgroup="one",
                 fillcolor="#FF6B6B",
                 line=dict(color="#FF6B6B"),
-                hovertemplate="<b>%{x|%B}</b><br>Companies: %{y:.2f}%<extra></extra>"
+                hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>Companies: %{{y:.2f}}%<extra></extra>"
             ))
             
             fig_volume.update_layout(
                 title=f"% of Trading Volume: Individuals vs Companies",
-                xaxis_title="Month",
+                xaxis_title=xaxis_title,
                 yaxis_title="Percentage (%)",
                 yaxis=dict(range=[0, 100]),
                 hovermode="x unified",
@@ -1026,7 +1098,7 @@ with tab4:
                 name="Female",
                 mode="lines",
                 fill="tozeroy",
-                hovertemplate="<b>%{x|%B}</b><br>Female: %{y:.2f}%<extra></extra>"
+                hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>Female: %{{y:.2f}}%<extra></extra>"
             ))
             fig_ops.add_trace(go.Scatter(
                 x=gender_ops["data"],
@@ -1034,12 +1106,12 @@ with tab4:
                 name="Male",
                 mode="lines",
                 fill="tonexty",
-                hovertemplate="<b>%{x|%B}</b><br>Male: %{y:.2f}%<extra></extra>"
+                hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>Male: %{{y:.2f}}%<extra></extra>"
             ))
             
             fig_ops.update_layout(
                 title=f"Percentage of Operations by Gender {get_title_suffix()}",
-                xaxis_title="Month",
+                xaxis_title=xaxis_title,
                 yaxis_title="Percentage (%)",
                 hovermode="x unified",
                 template="plotly_white"
@@ -1058,7 +1130,15 @@ with tab4:
                 name="Female",
                 mode="lines",
                 fill="tozeroy",
-                hovertemplate="<b>%{x|%B}</b><br>Female: %{y:.2f}%<extra></extra>"
+                hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>Female: %{{y:.2f}}%<extra></extra>"
+            ))
+            fig_val.add_trace(go.Scatter(
+                x=gender_val["data"],
+                y=gender_val["perc_valor_oper_feminino"],
+                name="Female",
+                mode="lines",
+                fill="tozeroy",
+                hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>Female: %{{y:.2f}}%<extra></extra>"
             ))
             fig_val.add_trace(go.Scatter(
                 x=gender_val["data"],
@@ -1066,12 +1146,12 @@ with tab4:
                 name="Male",
                 mode="lines",
                 fill="tonexty",
-                hovertemplate="<b>%{x|%B}</b><br>Male: %{y:.2f}%<extra></extra>"
+                hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>Male: %{{y:.2f}}%<extra></extra>"
             ))
             
             fig_val.update_layout(
                 title=f"Percentage of Operation Value by Gender {get_title_suffix()}",
-                xaxis_title="Month",
+                xaxis_title=xaxis_title,
                 yaxis_title="Percentage (%)",
                 hovermode="x unified",
                 template="plotly_white"
@@ -1317,11 +1397,11 @@ with tab5:
                 y=f"valor_total_operacoes{currency_suffix}",
                 color="criptoativo",
                 title=f"Monthly Trading Volume - Top 5 Cryptocurrencies {get_title_suffix()}",
-                labels={"data": "Month", f"valor_total_operacoes{currency_suffix}": f"Total Value ({currency_symbol})", "criptoativo": "Cryptocurrency"},
+                labels={"data": xaxis_title, f"valor_total_operacoes{currency_suffix}": f"Total Value ({currency_symbol})", "criptoativo": "Cryptocurrency"},
                 template="plotly_white",
                 markers=True
             )
-            fig_crypto_line.update_traces(hovertemplate=f"<b>%{{x|%B}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
+            fig_crypto_line.update_traces(hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
             fig_crypto_line = apply_shadcn_theme(fig_crypto_line)
             st.plotly_chart(fig_crypto_line, width="stretch", key="crypto_line")
         
@@ -1370,10 +1450,10 @@ with tab5:
                         x="data",
                         y=f"valor_total_operacoes{currency_suffix}",
                         title=f"{selected_crypto} - Monthly Trading Volume",
-                        labels={"data": "Month", f"valor_total_operacoes{currency_suffix}": f"Volume ({currency_symbol})"},
+                        labels={"data": xaxis_title, f"valor_total_operacoes{currency_suffix}": f"Volume ({currency_symbol})"},
                         template="plotly_white"
                     )
-                    fig_volume.update_traces(hovertemplate=f"<b>%{{x|%B %Y}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
+                    fig_volume.update_traces(hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>{currency_symbol} %{{y:,.2f}}<extra></extra>")
                     fig_volume = apply_shadcn_theme(fig_volume)
                     st.plotly_chart(fig_volume, width="stretch", key=f"crypto_search_volume_{selected_crypto}")
                 
@@ -1384,11 +1464,11 @@ with tab5:
                         x="data",
                         y="num_operacoes",
                         title=f"{selected_crypto} - Number of Transactions",
-                        labels={"data": "Month", "num_operacoes": "Transactions"},
+                        labels={"data": xaxis_title, "num_operacoes": "Transactions"},
                         template="plotly_white",
                         color_discrete_sequence=["#FF6B6B"]
                     )
-                    fig_ops.update_traces(hovertemplate="<b>%{x|%B %Y}</b><br>%{y:,}<extra></extra>")
+                    fig_ops.update_traces(hovertemplate=f"<b>%{{x|{date_fmt}}}</b><br>%{{y:,}}<extra></extra>")
                     fig_ops = apply_shadcn_theme(fig_ops)
                     st.plotly_chart(fig_ops, width="stretch", key=f"crypto_search_ops_{selected_crypto}")
                 

@@ -59,13 +59,10 @@ def apply_shadcn_theme(fig):
     """
     fig.update_layout(SHADCN_THEME["layout"])
     
-    # Update traces for spline "flow" effect ONLY for lines (Scatter)
-    fig.update_traces(
-        selector=dict(type="scatter"),
-        mode="lines", 
-        line_shape="spline", 
-        line_width=3
-    )
+    # Update traces for spline "flow" effect ONLY for lines (not pure markers)
+    # Using 'getattr' safely because 'Bar' and others don't have 'mode'
+    fig.for_each_trace(lambda t: t.update(line_shape="spline", line_width=3) 
+                       if hasattr(t, 'mode') and t.mode and "lines" in t.mode else None)
     
     # Specific adjustments for Bar charts to look cleaner
     if fig.data and fig.data[0].type == 'bar':

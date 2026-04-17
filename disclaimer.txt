@@ -1,0 +1,7 @@
+<div class="disclaimer">
+    📊 <strong>Data Source Disclaimer</strong><br>
+    This dashboard uses <strong>open source data from Receita Federal Brasil</strong> (Brazilian Federal Revenue Service).<br>
+    <strong>Data Analysis:</strong> Produced by <a href="https://pplx.ai/patrickds3872" target="_blank">Perplexity AI</a> in January 2026 <br>
+    <strong>Official Data Sources:</strong> 
+    <a href="https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/declaracoes-e-demonstrativos/criptoativos" target="_blank">Receita Federal - Crypto Assets</a>
+    </div>

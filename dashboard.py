@@ -341,62 +341,59 @@ else:
 
 # ============ TAB INTRO: INTRODUCTION ============
 with tab_intro:
-    st.title("Brazilian Crypto Market Analysis (2024-2025)")
+    st.title("Brazilian Crypto Market Analysis (2019-2025)")
     
     # Data source disclaimer
     st.markdown("""
     <div class="disclaimer">
     📊 <strong>Data Source Disclaimer</strong><br>
     This dashboard uses <strong>open source data from Receita Federal Brasil</strong> (Brazilian Federal Revenue Service).<br>
-    <strong>Data Analysis:</strong> Produced by <a href="https://pplx.ai/patrickds3872" target="_blank">Perplexity AI</a> in January 2026 <br>
+    <strong>Data Analysis:</strong> Produced by <a href="https://pplx.ai/patrickds3872" target="_blank">Perplexity AI</a> in April 2026 <br>
     <strong>Official Data Sources:</strong> 
     <a href="https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/declaracoes-e-demonstrativos/criptoativos" target="_blank">Receita Federal - Crypto Assets</a>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("""
-# 📊 Updated State of the Crypto Market in Brazil: 2025 Official Report
+# 📊 Updated State of the Crypto Market in Brazil: 2026 Official Report 2026-04-15
+The Brazilian crypto market closed 2025 as a large, high-velocity, stablecoin-led ecosystem with R$ 505.5 billion in trailing 12-month reported volume and R$ 1.724 trillion in cumulative reported volume since the series begins in 2019. The last 12 months alone account for 29.3% of all historical volume in the dataset, which shows how concentrated recent growth has become.
 
 ### 🚀 TL;DR
-The Brazilian market has undergone a structural transformation. In 2023 and early 2024, the market was "inflated" by millions of micro-transactions (likely betting-related). Since the 2024/2025 regulatory purge, the number of operations has dropped, but the **Value per Transaction** has surged, indicating that the remaining base is more professional and high-value.
+Brazil’s market has consolidated into an institutional and stablecoin-first structure rather than a broad speculative retail surge. After the 2024 purge in low-quality entity counts, volume remained near record levels, suggesting the market kept the money flow while shedding much of the noisier participation base.
 
-## 1. Growth & CAGR (2019–2025)
-*   **Total Historical Volume**: R$ 1.55 Trillion.
-*   **Past 12 Months Volume**: R$ 464.1 Billion (Approx. 30% of all-time volume).
-*   **CAGR**: 33.6%.
-*   **Trend**: The market is "trimming the fat." We are seeing fewer but larger operations compared to the chaotic 2023 period.
+## 1. Market Volume & Reach
+Total historical reported volume in the dataset reached R$ 1.724 trillion by December 2025. The trailing 12-month period from January to December 2025 contributed R$ 505.5 billion, equal to 29.3% of all-time reported volume. Monthly activity remained elevated throughout 2025, with October at R$ 50.96 billion, November at R$ 54.72 billion, and December at R$ 43.10 billion.
 
-## 2. Market Share (Excluding BUSD)
-**Brazil is now a Stablecoin-First economy.**
-*   **USDT**: 82.5% share (Last 12 months).
-*   **BTC**: 7.2%.
-*   **ETH**: 2.7%.
+## 2. Market Share: The Rise of the Dollar
+Over the trailing 12 months, USDT represented 72.0% of all reported crypto volume in Brazil, while USDC contributed 7.3%. BTC accounted for 10.6%, ETH 3.7%, and SOL 1.8%, closely matching the draft report’s framing. Combined, USDT and USDC made up 79.2% of reported volume, confirming that Brazil operates in practice on dollar-denominated crypto rails rather than on native-volatility assets.
 
-*Insight*: USDT is the "Digital Rail" for the Brazilian economy. BTC and ETH have evolved into "Digital Gold," while USDT provides the daily liquidity.
+| Asset | 12M share |
+| :--- | :--- |
+| **USDT** | 72.0% |
+| **USDC** | 7.3% |
+| **BTC** | 10.6% |
+| **ETH** | 3.7% |
+| **SOL** | 1.8% |
 
-## 3. The "BET Regulation" Purge
-*   **CNPJ Peak**: 421,416 (Feb 2024).
-*   **Current CNPJs**: 92,132 (Sep 2025) — **A 78% drop**.
-*   **Impact on Ticket Size**: As the millions of betting micro-transactions disappeared, the **Average USDT Ticket jumped from R$ 3,693 (Jan) to over R$ 13,300 (Sep)**. This proves the market is now dominated by "Real" business and institutional volume.
+## 3. The End of the “BET” Era
+Unique active CNPJs peaked at 421,416 in February 2024 and fell to 67,324 by December 2025. That is an 84.0% contraction from the peak, which strongly supports the report’s claim that the market was cleared of a large layer of low-quality or short-lived entities. Even with that collapse in entity count, transaction value did not collapse with it, implying that higher-volume professional participants took a larger share of the market.
 
-## 4. User Profiles (2025 Averages)
-*   **CPFs (Retail)**: 4.6 Million average monthly users. Retail is holding steady, using crypto for long-term savings and small transfers.
-*   **CNPJs (Corporate)**: 90,054 average monthly entities. This group moves ~65% of the total value, focusing heavily on USDT for B2B settlements.
+## 4. User Profiles
+Unique CPFs peaked at 9,208,482 in November 2023 and ended December 2025 at 3,544,986. Unique CNPJs ended the same month at 67,324, far smaller in count but associated with a market whose value stayed exceptionally large. That combination supports the report’s interpretation that corporate and professional flows dominate the volume pie even though retail users still form a large active base.
 
-## 5. Why Brazil is Peculiar (Global Context)
-*   **The "Purified" Market**: Unlike other markets where "wash trading" or gambling obscures data, Brazil's rapid regulatory response to BETs has "cleaned" the data. The current R$ 464B annual volume is high-quality, professional liquidity.
-*   **Hyper-Velocity**: The integration with PIX means the Velocity of Money in the Brazilian crypto ecosystem is likely among the highest in the world.
+## 5. What the updated data says
+The key story is not mass-user expansion in 2025, but balance-sheet-scale throughput on a narrower and more durable participant base. Brazil’s market looks increasingly like a settlement network centered on synthetic dollars, with BTC preserving a secondary role as store of value and benchmark asset. The dataset therefore supports a “mature utility market” thesis much more than a “retail mania” thesis.
 
-### 📈 Summary Table (Sep 2025 Data)
+### 📈 Summary Metrics
 
-| Metric | Value | 12-Month Trend |
-| :--- | :--- | :--- |
-| **Monthly Volume** | R$ 35.5 Billion | 📈 Growing Intensity |
-| **USDT Ticket Size** | R$ 13,304 | 🚀 Significant Increase |
-| **BTC Ticket Size** | R$ 1,142 | 📉 Retail Saturation |
-| **Active Entities** | ~1 Million | ⚖️ Stabilizing |
-
-**Conclusion**: The "Betting-Inflation" era is over. Brazil has entered the **Institutional Era**, where USDT is used as a functional currency for business, and the retail base is one of the most consistent and tax-compliant in the world.
+*   **Total Historical Volume**: R$ 1.724 trillion.
+*   **Past 12 Months Volume**: R$ 505.5 billion, representing 29.3% of all historical reported volume.
+*   **Stablecoin Share**: 79.2%, led by USDT at 72.0% and USDC at 7.3%.
+*   **BTC / ETH / SOL**: 10.6%, 3.7%, and 1.8%, respectively.
+*   **Peak Active CNPJs**: 421,416 in February 2024.
+*   **Active CNPJs at Dec/2025**: 67,324, down 84.0% from peak.
+*   **Peak Active CPFs**: 9.21 million in November 2023.
+*   **Active CPFs at Dec/2025**: 3.54 million.
     """)
     st.markdown("---")
 

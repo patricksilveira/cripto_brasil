@@ -2,7 +2,7 @@ import pandas as pd
 import re
 from pathlib import Path
 
-ARQUIVO_XLS = "Criptoativos_Dados_Abertos_20251112.xls"
+ARQUIVO_XLS = "criptoativos_dados_abertos_20260415.xls"
 PASTA_SAIDA = Path("saida_csv")
 PASTA_SAIDA.mkdir(exist_ok=True)
 

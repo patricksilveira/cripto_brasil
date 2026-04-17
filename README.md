@@ -2,6 +2,8 @@
 
 Um dashboard interativo para visualizar dados mensais de operações com criptoativos no Brasil.
 
+**📅 Última Atualização de Dados:** 15 de Abril de 2026 (Status: Relatório Consolidado)
+
 ## 📋 Características
 
 - **Visão Geral**: Métricas principais e evolução temporal

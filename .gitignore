@@ -23,3 +23,10 @@ ENV/
 # *.xls
 # *.xlsx
 # *.csv
+.gstack/
+
+# Next.js web app
+web/.next/
+web/out/
+web/node_modules/
+web/*.tsbuildinfo

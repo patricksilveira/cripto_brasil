@@ -10,6 +10,7 @@ import { OverviewTab } from "@/components/tabs/OverviewTab"
 import { UsersTab } from "@/components/tabs/UsersTab"
 import { GenderTab } from "@/components/tabs/GenderTab"
 import { CryptosTab } from "@/components/tabs/CryptosTab"
+import { IntroTab } from "@/components/tabs/IntroTab"
 
 type Props = {
   operations: Operation[]
@@ -21,12 +22,37 @@ type Props = {
 
 export function Dashboard({ operations, users, gender, cryptos, fxRates }: Props) {
   const [currency, setCurrency] = useState<"BRL" | "USD">("BRL")
+  const [selectedYear, setSelectedYear] = useState<number | "all">("all")
+
+  const years = useMemo(() =>
+    [...new Set(operations.map(o => o.year))].sort(),
+    [operations]
+  )
+
+  // Apply year filter to all datasets
+  const filteredOps = useMemo(() =>
+    selectedYear === "all" ? operations : operations.filter(o => o.year === selectedYear),
+    [operations, selectedYear]
+  )
+  const filteredUsers = useMemo(() =>
+    selectedYear === "all" ? users : users.filter(u => u.year === selectedYear),
+    [users, selectedYear]
+  )
+  const filteredGender = useMemo(() =>
+    selectedYear === "all" ? gender : gender.filter(g => g.year === selectedYear),
+    [gender, selectedYear]
+  )
+  const filteredCryptos = useMemo(() =>
+    selectedYear === "all" ? cryptos : cryptos.filter(c => c.year === selectedYear),
+    [cryptos, selectedYear]
+  )
 
   const latest = operations[operations.length - 1]
   const prev = operations[operations.length - 2]
   const latestUsers = users[users.length - 1]
   const latestGender = gender[gender.length - 1]
 
+  // KPIs always show latest month (unfiltered)
   const totalVolumeCurrent = currency === "USD" ? latest.valor_total_usd : latest.valor_total_brl
   const totalVolumePrev = currency === "USD" ? prev?.valor_total_usd : prev?.valor_total_brl
   const volumeChange = totalVolumeCurrent && totalVolumePrev
@@ -36,28 +62,28 @@ export function Dashboard({ operations, users, gender, cryptos, fxRates }: Props
   const kpis = useMemo(() => [
     {
       label: "Total Volume",
-      sublabel: `${formatDate(latest.date)}`,
+      sublabel: formatDate(latest.date),
       value: formatCurrency(totalVolumeCurrent, currency),
       change: volumeChange,
-      note: "millions BRL (RFB)",
+      note: "millions (RFB)",
     },
     {
       label: "Unique Users",
-      sublabel: `${formatDate(latest.date)}`,
+      sublabel: formatDate(latest.date),
       value: formatNumber(latestUsers.total),
       change: latestUsers.mom_pct,
       note: "CPF + CNPJ",
     },
     {
       label: "Retail (CPF)",
-      sublabel: `${formatDate(latest.date)}`,
+      sublabel: formatDate(latest.date),
       value: formatNumber(latestUsers.cpfs),
       change: latestUsers.cpf_mom_pct,
       note: "Individual traders",
     },
     {
       label: "Institutional (CNPJ)",
-      sublabel: `${formatDate(latest.date)}`,
+      sublabel: formatDate(latest.date),
       value: formatNumber(latestUsers.cnpjs),
       change: latestUsers.cnpj_mom_pct,
       note: "Companies / funds",
@@ -83,6 +109,7 @@ export function Dashboard({ operations, users, gender, cryptos, fxRates }: Props
             <Badge variant="secondary" className="text-xs hidden sm:flex">
               Updated {formatDate(latest.date)}
             </Badge>
+            {/* Currency toggle */}
             <div className="flex rounded-md border border-border overflow-hidden">
               <Button
                 variant={currency === "BRL" ? "default" : "ghost"}
@@ -107,13 +134,43 @@ export function Dashboard({ operations, users, gender, cryptos, fxRates }: Props
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Hero */}
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Brazil Crypto Market
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Monthly data from the Federal Revenue Service (RFB) · {operations.length} months of history · Aug 2019 – {formatDate(latest.date)}
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Brazil Crypto Market
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Monthly data from RFB · {operations.length} months · Aug 2019 – {formatDate(latest.date)}
+            </p>
+          </div>
+
+          {/* Year filter */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground font-medium">Filter:</span>
+            <button
+              onClick={() => setSelectedYear("all")}
+              className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                selectedYear === "all"
+                  ? "bg-zinc-900 text-white border-zinc-900"
+                  : "border-border hover:bg-muted"
+              }`}
+            >
+              All time
+            </button>
+            {years.map(yr => (
+              <button
+                key={yr}
+                onClick={() => setSelectedYear(yr)}
+                className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                  selectedYear === yr
+                    ? "bg-zinc-900 text-white border-zinc-900"
+                    : "border-border hover:bg-muted"
+                }`}
+              >
+                {yr}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* KPI Cards */}
@@ -138,25 +195,32 @@ export function Dashboard({ operations, users, gender, cryptos, fxRates }: Props
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs defaultValue="intro" className="space-y-6">
           <TabsList className="h-10">
+            <TabsTrigger value="intro" className="text-sm">Introduction</TabsTrigger>
             <TabsTrigger value="overview" className="text-sm">Overview</TabsTrigger>
             <TabsTrigger value="users" className="text-sm">Users</TabsTrigger>
             <TabsTrigger value="gender" className="text-sm">Gender</TabsTrigger>
             <TabsTrigger value="cryptos" className="text-sm">Cryptos</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="intro">
+            <IntroTab />
+          </TabsContent>
           <TabsContent value="overview">
-            <OverviewTab operations={operations} users={users} currency={currency} />
+            <OverviewTab operations={filteredOps} users={filteredUsers} currency={currency} />
           </TabsContent>
           <TabsContent value="users">
-            <UsersTab users={users} />
+            <UsersTab users={filteredUsers} />
           </TabsContent>
           <TabsContent value="gender">
-            <GenderTab gender={gender} latestGender={latestGender} />
+            <GenderTab
+              gender={filteredGender}
+              latestGender={filteredGender[filteredGender.length - 1] ?? latestGender}
+            />
           </TabsContent>
           <TabsContent value="cryptos">
-            <CryptosTab cryptos={cryptos} currency={currency} />
+            <CryptosTab cryptos={filteredCryptos} currency={currency} />
           </TabsContent>
         </Tabs>
 

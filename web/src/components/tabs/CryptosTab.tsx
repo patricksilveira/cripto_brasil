@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import {
   BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, Legend
+  LineChart, Line, Legend, AreaChart, Area
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
@@ -65,6 +65,57 @@ export function CryptosTab({ cryptos, currency }: Props) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, vals]) => ({ date: formatDate(date), ...vals }))
   }, [cryptos, top5, currency])
+
+  // ── Individual Cryptocurrency Analysis State & Data ─────────────────────
+  const allAssets = useMemo(() => {
+    const set = new Set<string>()
+    for (const r of cryptos) {
+      if (r.asset && r.asset.toLowerCase() !== "criptoativo") {
+        set.add(r.asset)
+      }
+    }
+    return Array.from(set).sort()
+  }, [cryptos])
+
+  const [selectedAsset, setSelectedAsset] = useState<string>("BTC")
+
+  const selectedData = useMemo(() => {
+    if (!selectedAsset) return []
+    return cryptos
+      .filter(r => r.asset === selectedAsset)
+      .sort((a, b) => a.date.localeCompare(b.date))
+  }, [cryptos, selectedAsset])
+
+  const selectedMetrics = useMemo(() => {
+    let totalVol = 0
+    let totalOps = 0
+    let totalAvgSum = 0
+    let countAvg = 0
+
+    for (const r of selectedData) {
+      const v = currency === "USD" ? r.total_usd : r.total_brl
+      if (v != null) totalVol += v
+      if (r.num_ops != null) totalOps += r.num_ops
+      const avg = currency === "USD" ? r.avg_usd : r.avg_brl
+      if (avg != null) {
+        totalAvgSum += avg
+        countAvg++
+      }
+    }
+
+    const avgTicket = countAvg > 0 ? totalAvgSum / countAvg : 0
+    return { totalVol, totalOps, avgTicket }
+  }, [selectedData, currency])
+
+  const selectedChartData = useMemo(() => {
+    return selectedData.map(r => ({
+      date: formatDate(r.date),
+      volume: currency === "USD" ? r.total_usd ?? 0 : r.total_brl ?? 0,
+      ops: r.num_ops ?? 0,
+      avg: currency === "USD" ? r.avg_usd ?? 0 : r.avg_brl ?? 0,
+      rawDate: r.date,
+    }))
+  }, [selectedData, currency])
 
   return (
     <div className="space-y-6">
@@ -171,7 +222,173 @@ export function CryptosTab({ cryptos, currency }: Props) {
           </Table>
         </CardContent>
       </Card>
+
+      {/* ── Section: Individual Cryptocurrency Analysis ───────────────────── */}
+      <div className="pt-6 border-t border-border space-y-6">
+        <div>
+          <h3 className="text-xl font-bold tracking-tight">Individual Cryptocurrency Analysis</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Search and select a cryptocurrency to analyze its detailed volume, transaction trends, and monthly figures.
+          </p>
+        </div>
+
+        {/* Dropdown Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <label htmlFor="crypto-select" className="text-sm font-medium text-foreground whitespace-nowrap">
+            Search / Select Cryptocurrency:
+          </label>
+          <select
+            id="crypto-select"
+            value={selectedAsset}
+            onChange={(e) => setSelectedAsset(e.target.value)}
+            className="h-10 px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 max-w-xs cursor-pointer"
+          >
+            {allAssets.map((asset) => (
+              <option key={asset} value={asset}>
+                {asset}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {selectedAsset && selectedData.length > 0 ? (
+          <>
+            {/* Metric Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Total Volume (Period)</CardDescription>
+                  <CardTitle className="text-2xl font-bold">
+                    {formatCurrency(selectedMetrics.totalVol, currency, true)}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Total Transactions</CardDescription>
+                  <CardTitle className="text-2xl font-bold">
+                    {formatNumber(selectedMetrics.totalOps)}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Avg Transaction Value</CardDescription>
+                  <CardTitle className="text-2xl font-bold">
+                    {formatRawCurrency(selectedMetrics.avgTicket, currency)}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            </div>
+
+            {/* Individual Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Monthly Volume Area Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base font-semibold">
+                    {selectedAsset} — Monthly Trading Volume
+                  </CardTitle>
+                  <CardDescription>Volume in {currency} per month</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <AreaChart data={selectedChartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                      <defs>
+                        <linearGradient id="volGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#2563EB" stopOpacity={0.4} />
+                          <stop offset="95%" stopColor="#2563EB" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#71717a" }} tickLine={false} axisLine={false} interval={4} />
+                      <YAxis tick={{ fontSize: 10, fill: "#71717a" }} tickLine={false} axisLine={false} tickFormatter={(v) => formatCurrency(v, currency)} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: 8, border: "1px solid #e4e4e7", fontSize: 11 }}
+                        formatter={(v: unknown) => [formatCurrency(v as number, currency, false), "Volume"]}
+                      />
+                      <Area type="monotone" dataKey="volume" stroke="#2563EB" strokeWidth={2} fillOpacity={1} fill="url(#volGradient)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Number of Transactions Bar Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base font-semibold">
+                    {selectedAsset} — Number of Transactions
+                  </CardTitle>
+                  <CardDescription>Operation count per month</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={selectedChartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#71717a" }} tickLine={false} axisLine={false} interval={4} />
+                      <YAxis tick={{ fontSize: 10, fill: "#71717a" }} tickLine={false} axisLine={false} tickFormatter={(v) => formatNumber(v)} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: 8, border: "1px solid #e4e4e7", fontSize: 11 }}
+                        formatter={(v: unknown) => [formatNumber(v as number), "Transactions"]}
+                      />
+                      <Bar dataKey="ops" fill="#FF6B6B" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Monthly Detailed Data Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">
+                  {selectedAsset} — Monthly Detailed Data
+                </CardTitle>
+                <CardDescription>Historical monthly breakdown for {selectedAsset}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-80 overflow-y-auto border border-border rounded-md">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-background z-10">
+                      <TableRow>
+                        <TableHead>Month</TableHead>
+                        <TableHead className="text-right">Total Volume ({currency})</TableHead>
+                        <TableHead className="text-right">Transactions</TableHead>
+                        <TableHead className="text-right">Avg. Ticket ({currency})</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedChartData
+                        .slice()
+                        .reverse()
+                        .map((row) => (
+                          <TableRow key={row.rawDate}>
+                            <TableCell className="font-medium">{row.date}</TableCell>
+                            <TableCell className="text-right font-medium">
+                              {formatCurrency(row.volume, currency, true)}
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground">
+                              {formatNumber(row.ops)}
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground">
+                              {formatRawCurrency(row.avg, currency)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <div className="p-8 text-center text-muted-foreground rounded-lg border border-dashed border-border">
+            No data available for the selected cryptocurrency.
+          </div>
+        )}
+      </div>
     </div>
   )
 }
-

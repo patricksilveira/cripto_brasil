@@ -2,6 +2,13 @@
 
 This file logs the significant changes, updates, and developments made to the Cripto Brasil project over time.
 
+## 2026-08-31
+*   **Data & Dashboard Update (RFB 2026-08-26 / Data up to June 2026):**
+    *   Committed new raw dataset `criptoativos_dados_abertos_20260826.xls`.
+    *   Created backup of previous CSVs at `saida_csv_archive_20260415/`.
+    *   Updated `data_clean.py` with dynamic sheet header detection and processed the dataset into `saida_csv/`.
+    *   Updated Tab INTRO in `dashboard.py` with recalculated market statistics (historical volume R$ 2.012T, 12M volume R$ 559.8B, stablecoin share 86.4%, CPFs/CNPJs active counts).
+
 ## 2026-04-17
 *   **Data & Dashboard Modernization:** 
     *   Updated `data_clean.py` script to automate data ingestion for the latest Receita Federal data (up to April 2026).

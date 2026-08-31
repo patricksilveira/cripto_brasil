@@ -341,59 +341,59 @@ else:
 
 # ============ TAB INTRO: INTRODUCTION ============
 with tab_intro:
-    st.title("Brazilian Crypto Market Analysis (2019-2025)")
+    st.title("Brazilian Crypto Market Analysis (2019-2026)")
     
     # Data source disclaimer
     st.markdown("""
     <div class="disclaimer">
     📊 <strong>Data Source Disclaimer</strong><br>
     This dashboard uses <strong>open source data from Receita Federal Brasil</strong> (Brazilian Federal Revenue Service).<br>
-    <strong>Data Analysis:</strong> Produced by <a href="https://pplx.ai/patrickds3872" target="_blank">Perplexity AI</a> in April 2026 <br>
+    <strong>Data Analysis:</strong> Updated in August 2026 <br>
     <strong>Official Data Sources:</strong> 
     <a href="https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/declaracoes-e-demonstrativos/criptoativos" target="_blank">Receita Federal - Crypto Assets</a>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("""
-# 📊 Updated State of the Crypto Market in Brazil: 2026 Official Report 2026-04-15
-The Brazilian crypto market closed 2025 as a large, high-velocity, stablecoin-led ecosystem with R$ 505.5 billion in trailing 12-month reported volume and R$ 1.724 trillion in cumulative reported volume since the series begins in 2019. The last 12 months alone account for 29.3% of all historical volume in the dataset, which shows how concentrated recent growth has become.
+# 📊 Updated State of the Crypto Market in Brazil: 2026 Official Report 2026-08-26
+The Brazilian crypto market reached June 2026 as a large, high-velocity, stablecoin-led ecosystem with R$ 559.8 billion in trailing 12-month reported volume (July 2025 – June 2026) and R$ 2.012 trillion in cumulative reported volume since the series begins in 2019. The last 12 months alone account for 27.8% of all historical volume in the dataset, which shows how concentrated recent growth has become.
 
 ### 🚀 TL;DR
-Brazil’s market has consolidated into an institutional and stablecoin-first structure rather than a broad speculative retail surge. After the 2024 purge in low-quality entity counts, volume remained near record levels, suggesting the market kept the money flow while shedding much of the noisier participation base.
+Brazil’s market has consolidated into an institutional and stablecoin-first structure rather than a broad speculative retail surge. After the 2024 purge in low-quality entity counts, volume remained near record levels, reaching R$ 58.07 billion in May 2026 and R$ 57.54 billion in June 2026, suggesting the market kept the money flow while shedding much of the noisier participation base.
 
 ## 1. Market Volume & Reach
-Total historical reported volume in the dataset reached R$ 1.724 trillion by December 2025. The trailing 12-month period from January to December 2025 contributed R$ 505.5 billion, equal to 29.3% of all-time reported volume. Monthly activity remained elevated throughout 2025, with October at R$ 50.96 billion, November at R$ 54.72 billion, and December at R$ 43.10 billion.
+Total historical reported volume in the dataset reached R$ 2.012 trillion by June 2026. The trailing 12-month period from July 2025 to June 2026 contributed R$ 559.8 billion, equal to 27.8% of all-time reported volume. Monthly activity reached record heights in mid-2026, with April at R$ 43.52 billion, May at R$ 58.07 billion, and June at R$ 57.54 billion.
 
 ## 2. Market Share: The Rise of the Dollar
-Over the trailing 12 months, USDT represented 72.0% of all reported crypto volume in Brazil, while USDC contributed 7.3%. BTC accounted for 10.6%, ETH 3.7%, and SOL 1.8%, closely matching the draft report’s framing. Combined, USDT and USDC made up 79.2% of reported volume, confirming that Brazil operates in practice on dollar-denominated crypto rails rather than on native-volatility assets.
+Over the trailing 12 months, USDT represented 74.1% of all reported crypto volume in Brazil, while USDC contributed 12.3%. BTC accounted for 7.3%, ETH 2.6%, and SOL 1.1%. Combined, USDT and USDC made up 86.4% of reported volume, confirming that Brazil operates in practice on dollar-denominated crypto rails rather than on native-volatility assets.
 
 | Asset | 12M share |
 | :--- | :--- |
-| **USDT** | 72.0% |
-| **USDC** | 7.3% |
-| **BTC** | 10.6% |
-| **ETH** | 3.7% |
-| **SOL** | 1.8% |
+| **USDT** | 74.1% |
+| **USDC** | 12.3% |
+| **BTC** | 7.3% |
+| **ETH** | 2.6% |
+| **SOL** | 1.1% |
 
 ## 3. The End of the “BET” Era
-Unique active CNPJs peaked at 421,416 in February 2024 and fell to 67,324 by December 2025. That is an 84.0% contraction from the peak, which strongly supports the report’s claim that the market was cleared of a large layer of low-quality or short-lived entities. Even with that collapse in entity count, transaction value did not collapse with it, implying that higher-volume professional participants took a larger share of the market.
+Unique active CNPJs peaked at 421,419 in February 2024 and stood at 107,067 by June 2026. That is a 74.6% contraction from the peak, which strongly supports the report’s claim that the market was cleared of a large layer of low-quality or short-lived entities. Even with that contraction in entity count, transaction value reached historic peaks, implying that higher-volume professional participants took a larger share of the market.
 
 ## 4. User Profiles
-Unique CPFs peaked at 9,208,482 in November 2023 and ended December 2025 at 3,544,986. Unique CNPJs ended the same month at 67,324, far smaller in count but associated with a market whose value stayed exceptionally large. That combination supports the report’s interpretation that corporate and professional flows dominate the volume pie even though retail users still form a large active base.
+Unique CPFs peaked at 9,208,489 in November 2023 and ended June 2026 at 4,667,864. Unique CNPJs ended the same month at 107,067, far smaller in count but associated with a market whose value stayed exceptionally large. That combination supports the report’s interpretation that corporate and professional flows dominate the volume pie even though retail users still form a large active base.
 
 ## 5. What the updated data says
-The key story is not mass-user expansion in 2025, but balance-sheet-scale throughput on a narrower and more durable participant base. Brazil’s market looks increasingly like a settlement network centered on synthetic dollars, with BTC preserving a secondary role as store of value and benchmark asset. The dataset therefore supports a “mature utility market” thesis much more than a “retail mania” thesis.
+The key story is not mass-user expansion in 2026, but balance-sheet-scale throughput on a narrower and more durable participant base. Brazil’s market looks increasingly like a settlement network centered on synthetic dollars, with BTC preserving a secondary role as store of value and benchmark asset. The dataset therefore supports a “mature utility market” thesis much more than a “retail mania” thesis.
 
 ### 📈 Summary Metrics
 
-*   **Total Historical Volume**: R$ 1.724 trillion.
-*   **Past 12 Months Volume**: R$ 505.5 billion, representing 29.3% of all historical reported volume.
-*   **Stablecoin Share**: 79.2%, led by USDT at 72.0% and USDC at 7.3%.
-*   **BTC / ETH / SOL**: 10.6%, 3.7%, and 1.8%, respectively.
-*   **Peak Active CNPJs**: 421,416 in February 2024.
-*   **Active CNPJs at Dec/2025**: 67,324, down 84.0% from peak.
+*   **Total Historical Volume**: R$ 2.012 trillion.
+*   **Past 12 Months Volume**: R$ 559.8 billion, representing 27.8% of all historical reported volume.
+*   **Stablecoin Share**: 86.4%, led by USDT at 74.1% and USDC at 12.3%.
+*   **BTC / ETH / SOL**: 7.3%, 2.6%, and 1.1%, respectively.
+*   **Peak Active CNPJs**: 421,419 in February 2024.
+*   **Active CNPJs at Jun/2026**: 107,067, down 74.6% from peak.
 *   **Peak Active CPFs**: 9.21 million in November 2023.
-*   **Active CPFs at Dec/2025**: 3.54 million.
+*   **Active CPFs at Jun/2026**: 4.67 million.
     """)
     st.markdown("---")
 

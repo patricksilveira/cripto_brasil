@@ -2,7 +2,7 @@ import pandas as pd
 import re
 from pathlib import Path
 
-ARQUIVO_XLS = "criptoativos_dados_abertos_20260415.xls"
+ARQUIVO_XLS = "criptoativos_dados_abertos_20260826.xls"
 PASTA_SAIDA = Path("saida_csv")
 PASTA_SAIDA.mkdir(exist_ok=True)
 
@@ -36,6 +36,16 @@ def arredonda_float_cols(df):
             df[c] = df[c].round(2)
     return df
 
+def ler_aba_com_cabecalho(xls_path, sheet_name, col_esperada):
+    df_raw = pd.read_excel(xls_path, sheet_name=sheet_name, header=None)
+    header_idx = 0
+    for idx, row in df_raw.iterrows():
+        row_vals = [str(x).strip().upper() for x in row.dropna().values]
+        if col_esperada.upper() in row_vals:
+            header_idx = idx
+            break
+    return pd.read_excel(xls_path, sheet_name=sheet_name, header=header_idx)
+
 def limpar_relatorio1(df: pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns={
         df.columns[0]: "mes_ano",
@@ -50,10 +60,10 @@ def limpar_relatorio1(df: pd.DataFrame) -> pd.DataFrame:
     })
     df = df[df["mes_ano"].notna()].copy()
     df["mes_ano"] = df["mes_ano"].astype(str).str.strip()
-    # Adiciona as colunas de mês e ano
     mes, ano = quebrar_mes_ano(df["mes_ano"])
     df["mes"] = mes
     df["ano"] = ano
+    df = df[df["mes"].notna() & df["ano"].notna()].copy()
     df = arredonda_float_cols(df)
     cols_order = ["mes", "ano"] + [c for c in df.columns if c not in ("mes", "ano", "mes_ano")]
     return df[cols_order]
@@ -70,6 +80,7 @@ def limpar_relatorio2(df: pd.DataFrame) -> pd.DataFrame:
     mes, ano = quebrar_mes_ano(df["mes_ano"])
     df["mes"] = mes
     df["ano"] = ano
+    df = df[df["mes"].notna() & df["ano"].notna()].copy()
     cols_order = ["mes", "ano"] + [c for c in df.columns if c not in ("mes", "ano", "mes_ano")]
     return df[cols_order]
 
@@ -86,6 +97,7 @@ def limpar_relatorio3(df: pd.DataFrame) -> pd.DataFrame:
     mes, ano = quebrar_mes_ano(df["periodo"])
     df["mes"] = mes
     df["ano"] = ano
+    df = df[df["mes"].notna() & df["ano"].notna()].copy()
     df = arredonda_float_cols(df)
     cols_order = ["mes", "ano"] + [c for c in df.columns if c not in ("mes", "ano", "periodo")]
     return df[cols_order]
@@ -111,6 +123,7 @@ def limpar_relatorio4(df: pd.DataFrame) -> pd.DataFrame:
     mes, ano = quebrar_mes_ano(df["mes_ano"])
     df["mes"] = mes
     df["ano"] = ano
+    df = df[df["mes"].notna() & df["ano"].notna()].copy()
     df = arredonda_float_cols(df)
     cols_order = ["criptoativo", "mes", "ano"] + [c for c in df.columns if c not in ("criptoativo", "mes", "ano", "mes_ano")]
     return df[cols_order]
@@ -119,19 +132,19 @@ def main():
     xls = pd.ExcelFile(ARQUIVO_XLS)
     print("Abas encontradas:", xls.sheet_names)
 
-    df1 = pd.read_excel(ARQUIVO_XLS, sheet_name="Relatorio1")
+    df1 = ler_aba_com_cabecalho(ARQUIVO_XLS, "Relatorio1", "MÊS/ANO")
     df1_limpo = limpar_relatorio1(df1)
     df1_limpo.to_csv(PASTA_SAIDA / "relatorio1_operacoes_por_tipo.csv", index=False)
 
-    df2 = pd.read_excel(ARQUIVO_XLS, sheet_name="Relatorio2")
+    df2 = ler_aba_com_cabecalho(ARQUIVO_XLS, "Relatorio2", "MÊS/ANO")
     df2_limpo = limpar_relatorio2(df2)
     df2_limpo.to_csv(PASTA_SAIDA / "relatorio2_cpfs_cnpjs_unicos.csv", index=False)
 
-    df3 = pd.read_excel(ARQUIVO_XLS, sheet_name="Relatório3")
+    df3 = ler_aba_com_cabecalho(ARQUIVO_XLS, "Relatório3", "PERÍODO")
     df3_limpo = limpar_relatorio3(df3)
     df3_limpo.to_csv(PASTA_SAIDA / "relatorio3_genero_operacoes.csv", index=False)
 
-    df4 = pd.read_excel(ARQUIVO_XLS, sheet_name="Relatorio4")
+    df4 = ler_aba_com_cabecalho(ARQUIVO_XLS, "Relatorio4", "CRIPTOATIVO")
     df4_limpo = limpar_relatorio4(df4)
     df4_limpo.to_csv(PASTA_SAIDA / "relatorio4_criptoativos_mensal.csv", index=False)
 
